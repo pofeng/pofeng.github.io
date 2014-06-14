@@ -8,7 +8,7 @@ body {
 	line-height: 22px;
 	font-family: 'Helvetica Neue', Helvetica, Arial, 'Heiti TC', 'Apple LiGothic Medium', 微軟正黑體, sans-serif;
 	color: #828282;
-	background: url(images/body.png) repeat 0 0;
+/*	background: url(images/body.png) repeat 0 0; */
 	min-width: 100%;
 }
 
@@ -221,7 +221,7 @@ textarea { overflow: auto; }
 #footer .footer-cols { padding: 0 32px 26px;  }
 #footer .col { width: 212px; float: left; }
 #footer .col + .col { padding-left: 22px; }
-#footer h2 { font-size: 20px; margin-bottom:  10px; color: #fff; background: url(images/footer-cols.png) repeat-x 0 bottom;  padding-bottom: 10px; text-shadow: rgba(0,0,0,0.9) 1px 1px 1px; : 'Jura', sans-serif; font-weight: 700; text-transform: uppercase;  }
+#footer h2 { font-size: 20px; margin-bottom:  10px; color: #fff; background: url(images/footer-cols.png) repeat-x 0 bottom;  padding-bottom: 10px; text-shadow: rgba(0,0,0,0.9) 1px 1px 1px; font-weight: 700; text-transform: uppercase;  }
 
 #footer .col ul { list-style: none; list-style-position: outside; }
 #footer .col ul li { padding-left: 11px; background: url(images/green-arr.png) no-repeat 0 8px; padding-bottom: 7px; font-size: 14px; }
