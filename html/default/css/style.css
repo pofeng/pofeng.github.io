@@ -328,7 +328,7 @@ textarea { overflow: auto; }
 	.main .socials ul { display: block; float: none;  }
 	.main .content { padding-left: 20px; padding-right: 20px; }
 
-	#partners-slider img { margin: 0px 15px; float: left; height: 52px; }
+	#partners-slider img { margin: 0px 15px; float: left; height: 100px; }
 
 	#footer .footer-cols { padding-left: 20px; padding-right: 20px;  }
 	#footer .footer-cols .col { width: 165px; }
@@ -419,7 +419,7 @@ textarea { overflow: auto; }
 	.main .socials span { display: block;  }
 	.main .content { padding-left: 20px; padding-right: 20px; }
 
-	.main #partners-slider { height: 56px; }
+	.main #partners-slider { height: 104px; }
 	.main .partners { padding: 0 40px 12px; position: relative; margin-top: -20px; } 
 	#partners-slider img { margin: 0px 10px; }
 	.slider-arr a.prev-arr { left: 10px; }
