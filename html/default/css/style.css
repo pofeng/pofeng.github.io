@@ -256,6 +256,11 @@ textarea { overflow: auto; }
 #footer .footer-nav ul li a:hover { color: #fff; }
 
 #navigation a.nav-btn { display: none;  }
+
+#whoweare ul {
+  margin-left: 30px;
+}
+
 /* #Media Queries
 ================================================== */
 
@@ -329,6 +334,7 @@ textarea { overflow: auto; }
 	#footer .footer-cols .col { width: 165px; }
 	#footer .footer-cols .col + .col { padding-left: 16px; }
 	#footer .footer-bottom { padding-left: 20px; padding-right: 20px; }
+
 }
 
 	
@@ -438,3 +444,4 @@ textarea { overflow: auto; }
 	.pagination a { background: url(images/pagination@2x.png) no-repeat 0 1px; -webkit-background-size: 18px 40px; -moz-background-size: 18px 40px; background-size: 18px 40px; }
 	.main section { background: url(images/section@2x.png) no-repeat center bottom; -webkit-background-size: 300px 10px; -moz-background-size: 300px 10px; background-size: 300px 10px;  }
 }
+
