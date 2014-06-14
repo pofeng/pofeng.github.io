@@ -121,11 +121,8 @@ $(function() {
 	}).resize();
 	
 	$('#partners-slider .slider-holder2').carouFredSel({
-		align: 'center',
-	    items: {
-			visible: "variable",
-			width: "variable"
-		},
+		align: 'left',
+        width: '100%',
 		scroll: 1,
 		prev: ".prev-arr",
 		next: ".next-arr"
