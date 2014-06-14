@@ -15,7 +15,7 @@ body {
 a { color: #72ae13; text-decoration: none; cursor: pointer; }
 a:hover { text-decoration: underline; }
 a img { border: 0; }
-a.more { background: url(images/green-arr.png) no-repeat 0 5px; padding-left: 11px; color: #72ae13; text-decoration: underline; font-size: 12px; }
+a.more { background: url(images/green-arr.png) no-repeat 0 5px; padding-left: 11px; color: #72ae13; text-decoration: underline; font-size: 14px; }
 a.more:hover { text-decoration: none;  }
 
 article, aside, details, footer, header, menu, nav, section { display: block; }
