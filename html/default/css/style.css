@@ -36,6 +36,7 @@ input, textarea, select { font-size: 12px; font-family: arial, sans-serif; }
 textarea { overflow: auto; }
 
 .cl { display: block; height: 0; font-size: 0; line-height: 0; text-indent: -4000px; clear: both; }
+.cl.gap { display: block; height: 0; font-size: 0; line-height: 0; text-indent: -4000px; clear: both;margin-bottom: 30px; }
 .notext { font-size: 0; line-height: 0; text-indent: -4000px; }
 .left, .alignleft { float: left; display: inline; }
 .right, .alignright { float: right; display: inline; }
@@ -183,7 +184,6 @@ textarea { overflow: auto; }
 .main section { background: url(images/section.png) no-repeat center bottom; padding-bottom: 50px; margin-bottom: 20px;  }
 
 .main .cols { padding-left: 32px; padding-right: 32px;  }
-.main .cols h2 { padding-bottom: 4px; }
 .main .cols .col { width: 277px; float: left; }
 .main .cols .col + .col { padding-left: 40px; }
 .main .cols .col img { float: left; margin-right: 16px; width: 73px; }
