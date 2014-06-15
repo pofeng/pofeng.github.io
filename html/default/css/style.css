@@ -189,7 +189,8 @@ textarea { overflow: auto; }
 
 .main #partners-slider { height: 104px; }
 
-.main .partners { padding: 0 70px 30px 70px; height: 100%;  position: relative; overflow: hidden; margin-top: -20px; z-index: 100; }
+.main .partners { position: relative; padding: 0 35px }
+.main .partner-wrap { padding: 0 70px 30px 70px; height: 100%;  position: relative; overflow: hidden; z-index: 100; }
 .slider-holder2 { position: relative; overflow: hidden; }
 #partners-slider { overflow: hidden; position: relative; }
 #partners-slider img { margin: 0px; float: left; height: 100px; }
