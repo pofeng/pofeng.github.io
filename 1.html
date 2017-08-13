@@ -163,14 +163,14 @@
             document.getElementById('crm_cpid_'+cpid+'_amt_hi').innerHTML       = jsondata.money_target_display;
         }
         document.getElementById('crm_cpid_'+cpid+'_amt_raised').innerHTML   = jsondata.money_raised;
-        document.getElementById('crm_cpid_'+cpid+'_comments').innerHTML     = jsondata.about;
+//        document.getElementById('crm_cpid_'+cpid+'_comments').innerHTML     = jsondata.about;
         document.getElementById('crm_cpid_'+cpid+'_donors').innerHTML       = jsondata.num_donors;
-        document.getElementById('crm_cpid_'+cpid+'_btn_txt').innerHTML      = jsondata.button_title;
+//        document.getElementById('crm_cpid_'+cpid+'_btn_txt').innerHTML      = jsondata.button_title;
         document.getElementById('crm_cpid_'+cpid+'_campaign').innerHTML     = jsondata.campaign_start;
-        if ( jsondata.money_raised_percentage ) {
-            document.getElementById('crm_cpid_'+cpid+'_amt_fill').style.width   = jsondata.money_raised_percentage;
-            document.getElementById('crm_cpid_'+cpid+'_percentage').innerHTML   = jsondata.money_raised_percentage;
-        }
+//        if ( jsondata.money_raised_percentage ) {
+//            document.getElementById('crm_cpid_'+cpid+'_amt_fill').style.width   = jsondata.money_raised_percentage;
+//            document.getElementById('crm_cpid_'+cpid+'_percentage').innerHTML   = jsondata.money_raised_percentage;
+//        }
         if ( !jsondata.is_active ) {
             document.getElementById('crm_cpid_'+cpid+'_button').innerHTML   = jsondata.home_url;
             document.getElementById('crm_cpid_'+cpid+'_button').style.color = 'red';
