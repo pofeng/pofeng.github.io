@@ -1,0 +1,552 @@
+<style>
+  .crm-contribute-widget {
+    font-size:1.0em;
+    font-family:inherit;
+    padding:10px;
+    width:280px;
+    background: #EEF2EA;
+  }
+  .crm-contribute-widget h3 {
+    font-size:1.0em;
+    padding: 3px;
+    margin: 0px 0px 10px 0;
+    text-align:center;
+  }
+
+  .crm-amount {
+    margin-bottom: .8em;
+  }
+  .crm-contribute-widget .crm-amount-raised {
+    font-size: 1.6em;
+  }
+  .crm-contribute-widget .crm-amount-high {
+    font-size: .8em;
+  }
+  .crm-contribute-widget .crm-amount-bar {
+    background-color:#FFF;
+    width:100%;
+    display:block;
+    border:1px solid #CECECE;
+    border-radius:4px;
+    margin-bottom:.8em;
+  }
+  .crm-contribute-widget .crm-amount-fill {
+    background-color: #76CC1E;
+    height:1em;
+    display:block;
+    border-radius: 4px 0px 0px 4px;
+    text-align: right;
+  }
+  .crm-contribute-widget .crm-percentage {
+    color: #FFF;
+    font-size: .8em;
+  }
+  .crm-contribute-widget .crm-amount-raised-wrapper {
+      margin-bottom:.8em;
+  }
+  .crm-contribute-widget .crm-amount-raised {
+    font-weight:bold;
+  }
+  .crm-contribute-widget .crm-comments,
+  .crm-contribute-widget .crm-campaign {
+    font-size:.9em;
+    margin-bottom:.8em;
+    color: #aaa;
+    text-align: center;
+  }
+  .crm-contribute-widget .crm-donors {
+    font-size:1.6em;
+    margin-bottom:.8em;
+  }
+  .crm-contribute-widget .crm-logo {
+    text-align:center;
+  }
+  .crm-contribute-widget .crm-contribute-button {
+    display:block;
+    background-color:#CECECE;
+    text-align:center;
+    margin:0px 10% .8em 10%;
+    text-decoration:none;
+    color:#556C82;
+    padding:2px;
+    font-size:1.6em;
+  }
+</style>
+<style>
+  .crm-contribute-widget { 
+      background-color: #EEF2EA; /* background color */
+      border-color:#EEF2EA; /* border color */
+  }
+
+  .crm-contribute-widget h3 {
+      color: #555555;
+      background-color: #FFFFFF;
+  } /* title */
+
+  .crm-contribute-widget .crm-amount-raised { color:#000; }
+  .crm-contribute-widget .crm-amount-fill { 
+      background-color:#76CC1E;
+  }
+  .crm-contribute-widget .crm-amount-bar {  /* progress bar */
+      background-color:#F3F3F3;
+      border-color:#CECECE;
+  }
+
+  .crm-contribute-widget a.crm-contribute-button { /* button color */
+      background-color:#78EB05;
+  }
+
+  .crm-contribute-widget .crm-contribute-button-inner { /* button text color */
+      padding:2px;
+      display:block;
+      color:#FFFFFF;
+  }
+
+  .crm-contribute-widget .crm-comments,
+  .crm-contribute-widget .crm-campaign {
+      color:#999 /* other color*/
+  }
+  
+  .crm-contribute-widget .crm-home-url {
+      color:#555555 /* home page link color*/
+  }
+</style>
+
+
+<div id="crm_cpid_15" class="crm-contribute-widget">
+    <div id="crm_cpid_15_campaign" class="crm-campaign"></div>
+    <h3 id="crm_cpid_15_title"></h3>
+    <div class="crm-amount">
+        <div id="crm_cpid_15_amt_raised" class="crm-amount-raised"></div>
+        <div id="crm_cpid_15_amt_hi" class="crm-amount-high"></div>
+    </div>
+    <div id="crm_cpid_15_donors" class="crm-donors"></div>
+    <div class="crm-amount-bar">
+        <div class="crm-amount-fill" id="crm_cpid_15_amt_fill"><span id="crm_cpid_15_percentage" class="crm-percentage"></span></div>
+    </div>
+        <div id="crm_cpid_15_comments" class="crm-comments"></div>
+    <div class="crm-contribute-button-wrapper" id="crm_cpid_15_button">
+        <a href='https://ocf.neticrm.tw/civicrm/contribute/transact?reset=1&id=15' class="crm-contribute-button"><span class="crm-contribute-button-inner" id="crm_cpid_15_btn_txt"></span></a>
+    </div>
+</div>
+
+
+
+<script type="text/javascript">
+    //create onDomReady Event
+    window.onDomReady = DomReady;
+
+    //Setup the event
+    function DomReady(fn) { //W3C
+        if(document.addEventListener) {
+            document.addEventListener("DOMContentLoaded", fn, false);
+        } else { //IE
+            document.onreadystatechange = function(){readyState(fn)}
+        }
+    }
+
+    //IE execute function
+    function readyState(fn) {
+        //dom is ready for interaction
+        if(document.readyState == "interactive") {
+            fn();
+        }
+    }
+
+    window.onDomReady(onReady);
+
+    function onReady( ) {
+        var crmCurrency = jsondata.currencySymbol;
+        var cpid        = 15;
+        document.getElementById('crm_cpid_'+cpid+'_title').innerHTML        = jsondata.title;
+        if ( jsondata.money_target > 0 ) {
+            document.getElementById('crm_cpid_'+cpid+'_amt_hi').innerHTML       = jsondata.money_target_display;
+        }
+        document.getElementById('crm_cpid_'+cpid+'_amt_raised').innerHTML   = jsondata.money_raised;
+        document.getElementById('crm_cpid_'+cpid+'_comments').innerHTML     = jsondata.about;
+        document.getElementById('crm_cpid_'+cpid+'_donors').innerHTML       = jsondata.num_donors;
+        document.getElementById('crm_cpid_'+cpid+'_btn_txt').innerHTML      = jsondata.button_title;
+        document.getElementById('crm_cpid_'+cpid+'_campaign').innerHTML     = jsondata.campaign_start;
+        if ( jsondata.money_raised_percentage ) {
+            document.getElementById('crm_cpid_'+cpid+'_amt_fill').style.width   = jsondata.money_raised_percentage;
+            document.getElementById('crm_cpid_'+cpid+'_percentage').innerHTML   = jsondata.money_raised_percentage;
+        }
+        if ( !jsondata.is_active ) {
+            document.getElementById('crm_cpid_'+cpid+'_button').innerHTML   = jsondata.home_url;
+            document.getElementById('crm_cpid_'+cpid+'_button').style.color = 'red';
+        }
+    }
+    
+</script>
+
+<script type="text/javascript" src="https://ocf.neticrm.tw/sites/all/modules/civicrm//extern/widget.php?cpageId=15&widgetId=3"></script>
+
+<br>
+
+<style>
+  .crm-contribute-widget {
+    font-size:1.0em;
+    font-family:inherit;
+    padding:10px;
+    width:280px;
+    background: #EEF2EA;
+  }
+  .crm-contribute-widget h3 {
+    font-size:1.0em;
+    padding: 3px;
+    margin: 0px 0px 10px 0;
+    text-align:center;
+  }
+
+  .crm-amount {
+    margin-bottom: .8em;
+  }
+  .crm-contribute-widget .crm-amount-raised {
+    font-size: 1.6em;
+  }
+  .crm-contribute-widget .crm-amount-high {
+    font-size: .8em;
+  }
+  .crm-contribute-widget .crm-amount-bar {
+    background-color:#FFF;
+    width:100%;
+    display:block;
+    border:1px solid #CECECE;
+    border-radius:4px;
+    margin-bottom:.8em;
+  }
+  .crm-contribute-widget .crm-amount-fill {
+    background-color: #76CC1E;
+    height:1em;
+    display:block;
+    border-radius: 4px 0px 0px 4px;
+    text-align: right;
+  }
+  .crm-contribute-widget .crm-percentage {
+    color: #FFF;
+    font-size: .8em;
+  }
+  .crm-contribute-widget .crm-amount-raised-wrapper {
+      margin-bottom:.8em;
+  }
+  .crm-contribute-widget .crm-amount-raised {
+    font-weight:bold;
+  }
+  .crm-contribute-widget .crm-comments,
+  .crm-contribute-widget .crm-campaign {
+    font-size:.9em;
+    margin-bottom:.8em;
+    color: #aaa;
+    text-align: center;
+  }
+  .crm-contribute-widget .crm-donors {
+    font-size:1.6em;
+    margin-bottom:.8em;
+  }
+  .crm-contribute-widget .crm-logo {
+    text-align:center;
+  }
+  .crm-contribute-widget .crm-contribute-button {
+    display:block;
+    background-color:#CECECE;
+    text-align:center;
+    margin:0px 10% .8em 10%;
+    text-decoration:none;
+    color:#556C82;
+    padding:2px;
+    font-size:1.6em;
+  }
+</style>
+<style>
+  .crm-contribute-widget { 
+      background-color: #EEF2EA; /* background color */
+      border-color:#EEF2EA; /* border color */
+  }
+
+  .crm-contribute-widget h3 {
+      color: #555555;
+      background-color: #FFFFFF;
+  } /* title */
+
+  .crm-contribute-widget .crm-amount-raised { color:#000; }
+  .crm-contribute-widget .crm-amount-fill { 
+      background-color:#76CC1E;
+  }
+  .crm-contribute-widget .crm-amount-bar {  /* progress bar */
+      background-color:#F3F3F3;
+      border-color:#CECECE;
+  }
+
+  .crm-contribute-widget a.crm-contribute-button { /* button color */
+      background-color:#78EB05;
+  }
+
+  .crm-contribute-widget .crm-contribute-button-inner { /* button text color */
+      padding:2px;
+      display:block;
+      color:#FFFFFF;
+  }
+
+  .crm-contribute-widget .crm-comments,
+  .crm-contribute-widget .crm-campaign {
+      color:#999 /* other color*/
+  }
+  
+  .crm-contribute-widget .crm-home-url {
+      color:#555555 /* home page link color*/
+  }
+</style>
+
+
+<div id="crm_cpid_27" class="crm-contribute-widget">
+    <div id="crm_cpid_27_campaign" class="crm-campaign"></div>
+    <h3 id="crm_cpid_27_title"></h3>
+    <div class="crm-amount">
+        <div id="crm_cpid_27_amt_raised" class="crm-amount-raised"></div>
+        <div id="crm_cpid_27_amt_hi" class="crm-amount-high"></div>
+    </div>
+    <div id="crm_cpid_27_donors" class="crm-donors"></div>
+    <div class="crm-amount-bar">
+        <div class="crm-amount-fill" id="crm_cpid_27_amt_fill"><span id="crm_cpid_27_percentage" class="crm-percentage"></span></div>
+    </div>
+        <div id="crm_cpid_27_comments" class="crm-comments"></div>
+    <div class="crm-contribute-button-wrapper" id="crm_cpid_27_button">
+        <a href='https://ocf.neticrm.tw/civicrm/contribute/transact?reset=1&id=27' class="crm-contribute-button"><span class="crm-contribute-button-inner" id="crm_cpid_27_btn_txt"></span></a>
+    </div>
+</div>
+
+
+
+<script type="text/javascript">
+    //create onDomReady Event
+    window.onDomReady = DomReady;
+
+    //Setup the event
+    function DomReady(fn) { //W3C
+        if(document.addEventListener) {
+            document.addEventListener("DOMContentLoaded", fn, false);
+        } else { //IE
+            document.onreadystatechange = function(){readyState(fn)}
+        }
+    }
+
+    //IE execute function
+    function readyState(fn) {
+        //dom is ready for interaction
+        if(document.readyState == "interactive") {
+            fn();
+        }
+    }
+
+    window.onDomReady(onReady);
+
+    function onReady( ) {
+        var crmCurrency = jsondata.currencySymbol;
+        var cpid        = 27;
+        document.getElementById('crm_cpid_'+cpid+'_title').innerHTML        = jsondata.title;
+        if ( jsondata.money_target > 0 ) {
+            document.getElementById('crm_cpid_'+cpid+'_amt_hi').innerHTML       = jsondata.money_target_display;
+        }
+        document.getElementById('crm_cpid_'+cpid+'_amt_raised').innerHTML   = jsondata.money_raised;
+        document.getElementById('crm_cpid_'+cpid+'_comments').innerHTML     = jsondata.about;
+        document.getElementById('crm_cpid_'+cpid+'_donors').innerHTML       = jsondata.num_donors;
+        document.getElementById('crm_cpid_'+cpid+'_btn_txt').innerHTML      = jsondata.button_title;
+        document.getElementById('crm_cpid_'+cpid+'_campaign').innerHTML     = jsondata.campaign_start;
+        if ( jsondata.money_raised_percentage ) {
+            document.getElementById('crm_cpid_'+cpid+'_amt_fill').style.width   = jsondata.money_raised_percentage;
+            document.getElementById('crm_cpid_'+cpid+'_percentage').innerHTML   = jsondata.money_raised_percentage;
+        }
+        if ( !jsondata.is_active ) {
+            document.getElementById('crm_cpid_'+cpid+'_button').innerHTML   = jsondata.home_url;
+            document.getElementById('crm_cpid_'+cpid+'_button').style.color = 'red';
+        }
+    }
+    
+</script>
+
+<script type="text/javascript" src="https://ocf.neticrm.tw/sites/all/modules/civicrm//extern/widget.php?cpageId=27&widgetId=15"></script>
+
+<br>
+
+<style>
+  .crm-contribute-widget {
+    font-size:1.0em;
+    font-family:inherit;
+    padding:10px;
+    width:280px;
+    background: #EEF2EA;
+  }
+  .crm-contribute-widget h3 {
+    font-size:1.0em;
+    padding: 3px;
+    margin: 0px 0px 10px 0;
+    text-align:center;
+  }
+
+  .crm-amount {
+    margin-bottom: .8em;
+  }
+  .crm-contribute-widget .crm-amount-raised {
+    font-size: 1.6em;
+  }
+  .crm-contribute-widget .crm-amount-high {
+    font-size: .8em;
+  }
+  .crm-contribute-widget .crm-amount-bar {
+    background-color:#FFF;
+    width:100%;
+    display:block;
+    border:1px solid #CECECE;
+    border-radius:4px;
+    margin-bottom:.8em;
+  }
+  .crm-contribute-widget .crm-amount-fill {
+    background-color: #76CC1E;
+    height:1em;
+    display:block;
+    border-radius: 4px 0px 0px 4px;
+    text-align: right;
+  }
+  .crm-contribute-widget .crm-percentage {
+    color: #FFF;
+    font-size: .8em;
+  }
+  .crm-contribute-widget .crm-amount-raised-wrapper {
+      margin-bottom:.8em;
+  }
+  .crm-contribute-widget .crm-amount-raised {
+    font-weight:bold;
+  }
+  .crm-contribute-widget .crm-comments,
+  .crm-contribute-widget .crm-campaign {
+    font-size:.9em;
+    margin-bottom:.8em;
+    color: #aaa;
+    text-align: center;
+  }
+  .crm-contribute-widget .crm-donors {
+    font-size:1.6em;
+    margin-bottom:.8em;
+  }
+  .crm-contribute-widget .crm-logo {
+    text-align:center;
+  }
+  .crm-contribute-widget .crm-contribute-button {
+    display:block;
+    background-color:#CECECE;
+    text-align:center;
+    margin:0px 10% .8em 10%;
+    text-decoration:none;
+    color:#556C82;
+    padding:2px;
+    font-size:1.6em;
+  }
+</style>
+<style>
+  .crm-contribute-widget { 
+      background-color: #EEF2EA; /* background color */
+      border-color:#EEF2EA; /* border color */
+  }
+
+  .crm-contribute-widget h3 {
+      color: #555555;
+      background-color: #FFFFFF;
+  } /* title */
+
+  .crm-contribute-widget .crm-amount-raised { color:#000; }
+  .crm-contribute-widget .crm-amount-fill { 
+      background-color:#76CC1E;
+  }
+  .crm-contribute-widget .crm-amount-bar {  /* progress bar */
+      background-color:#F3F3F3;
+      border-color:#CECECE;
+  }
+
+  .crm-contribute-widget a.crm-contribute-button { /* button color */
+      background-color:#78EB05;
+  }
+
+  .crm-contribute-widget .crm-contribute-button-inner { /* button text color */
+      padding:2px;
+      display:block;
+      color:#FFFFFF;
+  }
+
+  .crm-contribute-widget .crm-comments,
+  .crm-contribute-widget .crm-campaign {
+      color:#999 /* other color*/
+  }
+  
+  .crm-contribute-widget .crm-home-url {
+      color:#555555 /* home page link color*/
+  }
+</style>
+
+
+<div id="crm_cpid_26" class="crm-contribute-widget">
+    <div id="crm_cpid_26_campaign" class="crm-campaign"></div>
+    <h3 id="crm_cpid_26_title"></h3>
+    <div class="crm-amount">
+        <div id="crm_cpid_26_amt_raised" class="crm-amount-raised"></div>
+        <div id="crm_cpid_26_amt_hi" class="crm-amount-high"></div>
+    </div>
+    <div id="crm_cpid_26_donors" class="crm-donors"></div>
+    <div class="crm-amount-bar">
+        <div class="crm-amount-fill" id="crm_cpid_26_amt_fill"><span id="crm_cpid_26_percentage" class="crm-percentage"></span></div>
+    </div>
+        <div id="crm_cpid_26_comments" class="crm-comments"></div>
+    <div class="crm-contribute-button-wrapper" id="crm_cpid_26_button">
+        <a href='https://ocf.neticrm.tw/civicrm/contribute/transact?reset=1&id=26' class="crm-contribute-button"><span class="crm-contribute-button-inner" id="crm_cpid_26_btn_txt"></span></a>
+    </div>
+</div>
+
+
+
+<script type="text/javascript">
+    //create onDomReady Event
+    window.onDomReady = DomReady;
+
+    //Setup the event
+    function DomReady(fn) { //W3C
+        if(document.addEventListener) {
+            document.addEventListener("DOMContentLoaded", fn, false);
+        } else { //IE
+            document.onreadystatechange = function(){readyState(fn)}
+        }
+    }
+
+    //IE execute function
+    function readyState(fn) {
+        //dom is ready for interaction
+        if(document.readyState == "interactive") {
+            fn();
+        }
+    }
+
+    window.onDomReady(onReady);
+
+    function onReady( ) {
+        var crmCurrency = jsondata.currencySymbol;
+        var cpid        = 26;
+        document.getElementById('crm_cpid_'+cpid+'_title').innerHTML        = jsondata.title;
+        if ( jsondata.money_target > 0 ) {
+            document.getElementById('crm_cpid_'+cpid+'_amt_hi').innerHTML       = jsondata.money_target_display;
+        }
+        document.getElementById('crm_cpid_'+cpid+'_amt_raised').innerHTML   = jsondata.money_raised;
+        document.getElementById('crm_cpid_'+cpid+'_comments').innerHTML     = jsondata.about;
+        document.getElementById('crm_cpid_'+cpid+'_donors').innerHTML       = jsondata.num_donors;
+        document.getElementById('crm_cpid_'+cpid+'_btn_txt').innerHTML      = jsondata.button_title;
+        document.getElementById('crm_cpid_'+cpid+'_campaign').innerHTML     = jsondata.campaign_start;
+        if ( jsondata.money_raised_percentage ) {
+            document.getElementById('crm_cpid_'+cpid+'_amt_fill').style.width   = jsondata.money_raised_percentage;
+            document.getElementById('crm_cpid_'+cpid+'_percentage').innerHTML   = jsondata.money_raised_percentage;
+        }
+        if ( !jsondata.is_active ) {
+            document.getElementById('crm_cpid_'+cpid+'_button').innerHTML   = jsondata.home_url;
+            document.getElementById('crm_cpid_'+cpid+'_button').style.color = 'red';
+        }
+    }
+    
+</script>
+
+<script type="text/javascript" src="https://ocf.neticrm.tw/sites/all/modules/civicrm//extern/widget.php?cpageId=26&widgetId=14"></script>
