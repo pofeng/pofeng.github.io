@@ -12,7 +12,7 @@ tags:
 
 **David Silver, Richard S. Sutton***
 
-《歡迎來到經驗時代》為即將在 MIT 出版社出版的《Designing an Intelligence》一書中的一章預印本。本文被稱作《苦澀的教訓》續集 ，Open AI 工程師 Jason Wei 在 2024 貼出的每日作息表，在 09:45 都會複習一次《苦澀的教訓》。[原文出處](https://storage.googleapis.com/deepmind-media/Era-of-Experience%20/The%20Era%20of%20Experience%20Paper.pdf)
+《歡迎來到經驗時代》為即將在 MIT 出版社出版的《Designing an Intelligence》一書中的一章預印本。本文被稱作《苦澀的教訓》續集 ，Open AI 工程師 Jason Wei，Chain-of-Thought 論文第一作者，在 2024 貼出的每日作息表，在 09:45 都會複習一次《苦澀的教訓》。[原文出處](https://storage.googleapis.com/deepmind-media/Era-of-Experience%20/The%20Era%20of%20Experience%20Paper.pdf)
 
 ### 摘要
 
