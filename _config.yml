@@ -1,11 +1,63 @@
-github: [metadata]
-kramdown:
-  input: GFM
-  hard_wrap: false
-gems:
-  - jekyll-coffeescript
+remote_theme: "mmistakes/minimal-mistakes@4.24.0"
+minimal_mistakes_skin: "default" # "air", "aqua", "contrast", "dark", "dirt", "neon", "mint", "plum", "sunrise"
+
+# Site Settings
+locale: "zh-TW"
+title: "李柏鋒 on github"
+title_separator: "-"
+subtitle: # site tagline that appears below site title in masthead
+name: "李柏鋒"
+description: "A flexible two-column Jekyll theme. Perfect for personal sites, blogs, and portfolios hosted on GitHub or your own server."
+url: # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
+baseurl: # the subpath of your site, e.g. "/blog"
+
+# Site Author
+author:
+  name: "Pofeng Lee"
+  avatar: # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
+  bio: "A short bio about yourself"
+  location: "Taiwan"
+  email: "your-email@example.com"
+  links:
+    - label: "Website"
+      icon: "fas fa-fw fa-link"
+      url: "https://web.pofeng.org"
+    - label: "Twitter"
+      icon: "fab fa-fw fa-twitter-square"
+      url: "https://twitter.com/pofeng"
+    - label: "GitHub"
+      icon: "fab fa-fw fa-github"
+      url: "https://github.com/pofeng"
+
+# Site Footer
+footer:
+  links:
+    - label: "Twitter"
+      icon: "fab fa-fw fa-twitter-square"
+      url: "https://twitter.com/pofeng"
+    - label: "GitHub"
+      icon: "fab fa-fw fa-github"
+      url: "https://github.com/pofeng"
+
+# Build settings
+markdown: kramdown
+plugins:
   - jekyll-paginate
-  - jekyll-redirect-from 
+  - jekyll-sitemap
+  - jekyll-gist
+  - jekyll-feed
+  - jemoji
+  - jekyll-include-cache
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
 
 #
 # https://help.github.com/articles/configuring-jekyll/
