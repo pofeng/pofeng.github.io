@@ -49,6 +49,9 @@ plugins:
   - jemoji
   - jekyll-include-cache
 
+# Show future posts
+future: true
+
 # Exclude from processing
 exclude:
   - Gemfile
