@@ -8,9 +8,11 @@ tags:
   - translation
 ---
 
-## 歡迎來到經驗時代
+## Welcome to the Era of Experience 歡迎來到經驗時代
 
 **David Silver, Richard S. Sutton***
+
+[原文出處](https://storage.googleapis.com/deepmind-media/Era-of-Experience%20/The%20Era%20of%20Experience%20Paper.pdf)
 
 ### 摘要
 
