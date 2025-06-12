@@ -2,7 +2,7 @@
 title: "Welcome to the Era of Experience 中譯版"
 date: 2025-06-13
 categories:
-  - comp
+  - ai
 tags:
   - 翻譯
   - translation
