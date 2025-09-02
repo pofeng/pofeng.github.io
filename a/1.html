@@ -1,0 +1,137 @@
+
+探討本地 LLM 記憶體分流的深層原因：以 DeepSeek 與 Gemma 為例
+
+
+執行摘要：解開 VRAM 差異之謎
+
+本報告旨在深入剖析一個在本地運行大型語言模型（LLM）時常見但又令人困惑的現象：在相同的硬體與軟體環境下，不同的模型卻展現出截然不同的記憶體分流行為。具體而言，本分析聚焦於使用者在 Windows 10 筆電上，使用 LM Studio 載入 deepseek-r1-distill-llama-8b 與 google/gemma-3-4b 時所觀察到的記憶體使用差異。核心結論是，這種看似矛盾的行為並非軟體故障或硬體限制，而是兩種模型根本性的底層架構差異，以及 LM Studio 推論引擎針對不同架構所採取的不同處理策略的必然結果。
+當使用者載入 deepseek-r1-distill-llama-8b 模型時，LM Studio 能夠成功利用 NVIDIA GeForce MX350 的 2GB 專屬 VRAM，並進一步將高達 3.4GB 的模型權重分流至共享 GPU 記憶體（即系統 RAM）。這種高效的分流能力，直接歸因於 DeepSeek 模型所採用的專家混合（Mixture-of-Experts, MoE）架構。MoE 架構的模組化特性與 LM Studio 的專屬優化功能相輔相成，使其能夠精準地按需載入模型的部分，從而實現了記憶體分流。
+然而，當模型切換為 google/gemma-3-4b 時，使用者卻觀察到 LM Studio 幾乎只佔用了專屬 VRAM，而共享記憶體的使用量微乎其微。這種行為的核心原因在於 Gemma 3 的多模態（Multimodal）能力。為了支援影像輸入，該模型內置了一個大型且高度整合的視覺編碼器。這個編碼器是一個巨大的單一組件，在模型載入時必須一併處理。根據社群數據，僅此視覺塔的記憶體佔用就遠超 2GB，這導致 LM Studio 在試圖將其載入僅有 2GB 專屬 VRAM 的 GPU 時遭遇瓶頸，最終放棄了分流計畫，或是以一種非優化的方式將整個模型權重載入到系統 RAM 中。
+此觀察揭示了一個關鍵事實：本地 LLM 部署的效能與資源利用率，不僅取決於模型的總參數規模，更深刻地依賴於模型架構與推論引擎之間是否存在高效的協同作用。兩種模型在總體大小上看似相近，但它們截然不同的底層設計哲學，導致了 LM Studio 在處理時的顯著差異。本報告將從技術層面詳細闡述這些差異，並為使用者提供實際可行的優化方案。
+
+第一章：核心差異：模型架構的深度剖析
+
+模型底層的架構設計是決定其在本地推論環境中記憶體行為的根本原因。LM Studio 作為一個推論引擎，其核心任務是將模型從儲存裝置載入到記憶體中，並在 GPU 上執行計算。然而，不同的模型架構對此過程提出了不同的挑戰與機遇。
+
+2.1. DeepSeek-R1-Distill-llama-8b：專家混合架構的效率
+
+deepseek-r1-distill-llama-8b 模型是 MoE 架構的一個典型代表 1。儘管其基座模型
+DeepSeek-R1 的總參數規模高達 671B，但 MoE 的核心設計在於其稀疏性：在給定一個輸入提示時，模型只會啟動一小部分「專家」網絡（在 DeepSeek 的案例中，每次只會啟用 37B 參數）來處理當前任務 1。這種設計極大地提升了推論效率。
+這種架構的模組化特性使其天然適合 LM Studio 這樣的分流推論引擎。MoE 模型包含一個相對較小的「路由層」（Router）和多個「專家網絡」（Experts） 2。當 LM Studio 載入模型時，它首先將核心的路由層和基礎模型權重載入 GPU 的 2GB 專屬 VRAM 中 3。由於這些核心組件的體積較小，可以輕鬆容納，為後續的運作提供了基礎。LM Studio 針對 MoE 模型提供了專門的優化功能，例如在進階載入設定中，允許使用者強制將「專家權重」分流至 CPU 記憶體，以適應 VRAM 受限的硬體 2。此外，LM Studio 的 API 參數中也包含了專門用於 MoE 模型的
+numExperts 設定，這表明其推論框架對這類模型有著成熟且深入的支持 4。
+這種架構與 GGUF 格式的記憶體映射（mmap）功能形成了完美的協同作用 5。GGUF 格式將模型權重組織成獨立的張量（tensors），允許作業系統在需要時才從硬碟將數據分頁載入到記憶體中，從而減少了初始載入時間和記憶體佔用 6。對於 MoE 模型，這意味著 LM Studio 可以將不常用或非當前活躍的「專家」權重文件部分分流到共享 GPU 記憶體中，實現一種「按需載入」的模式。當路由層判斷需要某個特定專家時，系統才會動態地將其對應的權重從共享記憶體讀取。這正是使用者成功利用 3.4GB 共享記憶體的根本原因，證明了 LM Studio 的 MoE 優化功能與使用者的混合顯卡配置之間存在高度協同效應。
+
+2.2. Gemma 3-4b：多模態的記憶體佔用
+
+與 DeepSeek 的 MoE 架構形成鮮明對比的是，google/gemma-3-4b 模型採用的是更為傳統的解碼器專用（Decoder-only）變壓器設計 7。儘管其總參數僅 4B，但在 Gemma 3 家族中，4B、12B 和 27B 等較大模型引入了一個關鍵的新功能：
+多模態（Multimodal）能力，使其能夠同時處理文本與影像輸入 8。
+這個多模態能力的核心是一個名為 SigLIP 的專用視覺編碼器 9。該編碼器約有 400M 參數，其功能是將輸入的影像（通常被調整為 896x896 像素）轉換為語言模型可理解的「軟權杖」（soft tokens）序列 8。這個視覺編碼器雖然參數量不大，但它在模型架構中是一個
+獨立且高度整合的組件，不同於 MoE 模型中可分離的「專家」權重。這帶來了巨大的記憶體開銷。根據使用者社群的討論，在某些情況下，僅這個視覺編碼器就可能佔用高達 7GB 的 VRAM 11。
+當 LM Studio 載入 GGUF 格式的 Gemma 3 時，它很可能試圖將整個模型（包括這個龐大的視覺編碼器）載入專屬 VRAM。由於使用者的 NVIDIA MX350 只有 2GB 專屬記憶體，LM Studio 在嘗試載入這個遠超 2GB 的組件時會立即觸發記憶體溢出。在這種情況下，推論引擎可能採取兩種應對策略：一是直接中止 GPU 分流，並將所有模型權重（包含視覺編碼器）全部載入到系統 RAM 中；二是進入一種非優化的、將模型層級全部放在 CPU 進行處理的低效模式。這解釋了為什麼使用者幾乎看不到共享 GPU 記憶體被利用，因為整個模型可能都以另一種方式載入了。這是一個重要的區別：LM Studio 的 GGUF 載入器可以很好地分層分流文本模型的權重，但對於 Gemma 3 這種將視覺編碼器作為一個不可分割的整體，其分流能力會受到嚴重限制。
+下表總結了兩種模型架構的差異如何直接影響其在 LM Studio 中的記憶體分流行為。
+模型名稱
+核心架構
+關鍵特徵
+LM Studio 支援
+觀察結果
+deepseek-r1-distill-llama-8b
+專家混合 (MoE)
+模組化「專家」網絡，僅需部分啟動
+專屬 MoE 優化，可精準分流專家權重
+成功利用專屬 VRAM 與共享記憶體
+google/gemma-3-4b
+解碼器專用（Decoder-only）
+內置一體化、大型視覺編碼器
+通用分層分流，但難以處理不可分割的視覺編碼器
+幾乎未利用共享記憶體，僅佔用專屬 VRAM
+
+
+第二章：軟體與硬體的協同作用
+
+除了模型本身的架構，本地 LLM 的效能與記憶體管理也高度依賴於推論引擎（LM Studio）的軟體邏輯和作業系統的硬體管理機制。這三者之間的互動共同決定了最終的結果。
+
+3.1. GGUF 格式與記憶體分頁機制
+
+GGUF 格式已成為本地 LLM 推論的事實標準 5。其最核心的優勢在於對記憶體映射（
+mmap）的良好支援 6。記憶體映射允許作業系統將一個文件直接映射到進程的虛擬記憶體空間中，而無需將整個文件一次性讀入 RAM。這意味著系統可以在需要時才將模型文件的特定部分（例如，特定的模型層或權重張量）載入到物理記憶體中，從而顯著減少了模型的初始載入時間和整體記憶體佔用 5。
+GGUF 格式的設計將模型權重組織成一系列獨立的「張量」（tensors），並在文件頭部包含了這些張量的詳細資訊 5。這種結構為推論引擎提供了極大的靈活性，使其能夠精確地控制將多少模型層分流到 GPU 上。在 LM Studio 中，這個功能通常通過
+n-gpu-layers 參數來實現，允許使用者手動指定要載入到 GPU 上的層數 12。從技術層面來看，GGUF 格式提供了實現分流的技術基礎，但它本身無法決定如何進行分流。這個決策權完全掌握在推論引擎手中，其策略會根據所載入模型的內部結構而有所不同。
+這個差異是理解 LM Studio 在兩個模型上不同行為的關鍵。對於 DeepSeek 這種「模組化」的模型，LM Studio 可以精準地識別並將 MoE 的「專家」權重視為獨立的單元進行分流；而對於 Gemma 3 這種「一體化」的模型，即使 GGUF 格式提供了分流的可能性，LM Studio 也可能因為其多模態架構的設計而無法有效執行分流策略。
+
+3.2. LM Studio 的特定分流邏輯
+
+LM Studio 作為一個專門的本地 LLM 推論工具，其內部包含了針對不同模型架構的特定優化邏輯。這解釋了為什麼 LM Studio 能夠高效地處理 DeepSeek 的 MoE 模型。根據其發布的更新日誌，LM Studio 已經加入了專門針對 MoE 模型的分流能力，允許使用者將專家權重強制載入到 CPU 或 GPU 2。這種專屬優化證明，LM Studio 對於 MoE 這種成熟的架構，已經擁有了完善的支持，這也是 DeepSeek 能夠成功分流的直接原因。
+然而，Gemma 3 是一個相對較新的模型系列，它引入了一些前所未有的新架構特性，例如用來減少 KV 快取記憶體佔用的交錯式注意力機制，以及全新的分詞器 13。這些技術的變革，可能對推論引擎的兼容性構成了挑戰。使用者社群的討論也證實了這一點：部分使用者反映，在 LM Studio 或
+llama.cpp 的早期版本中，Gemma 3 的效能不佳，直到更新到最新版本後才獲得改善 14。這表明，LM Studio 對於
+Gemma 3 這種新模型的支援，特別是其多模態功能，可能仍處於早期階段，需要時間來完善其分流邏輯和記憶體管理策略。這解釋了為什麼在兩種模型上會看到完全不同的行為：推論引擎對不同模型架構的支援程度並不均等。
+
+3.3. Windows 混合顯卡環境的運作
+
+使用者的筆電配置了一個典型的混合顯卡環境：一個專門處理圖形密集型任務的 NVIDIA GeForce MX350 獨立顯卡，以及一個負責基本顯示輸出的 Intel Iris Xe 集成顯卡 16。在 Windows 作業系統中，記憶體的分配是動態且由系統自動管理的 17。共享 GPU 記憶體並非固定佔用，而是在需要時才從系統 RAM 中動態劃分，並在不需要時釋放回系統 17。
+這種動態分配機制為本地 LLM 推論提供了物理上的可能性。當 LM Studio 在 GPU 專屬 VRAM 不足時，可以向作業系統申請共享記憶體來載入剩餘的模型權重。然而，LM Studio 是否會啟動這個機制，最終仍取決於其自身的內部邏輯。在 DeepSeek 的案例中，LM Studio 的 MoE 優化邏輯順利地觸發了共享記憶體的分配。而在 Gemma 3 的案例中，由於模型架構的挑戰，LM Studio 的分流邏輯未能被有效觸發，導致共享記憶體的利用率微乎其微。
+
+第三章：實用解決方案與優化策略
+
+基於上述分析，本章將為使用者提供具體的、可執行的操作建議，以應對 Gemma 3 的記憶體分流問題，並優化其本地 LLM 推論體驗。
+
+4.1. 應對 Gemma 3 記憶體佔用的策略
+
+要改善 Gemma 3 的記憶體分流問題，最直接的方法是從模型選擇和 LM Studio 參數調整兩方面著手。
+1. 選擇合適的模型版本：
+首先，建議使用者尋找專門為低 VRAM 設計的 Gemma 3 模型變體。這包括：
+非多模態版本： 如果使用者不需要 Gemma 的視覺能力，可以嘗試尋找純文本版本的 Gemma 模型，這將完全避免視覺編碼器的記憶體開銷。
+更高程度量化版本： 量化是減小模型大小和記憶體佔用的最有效手段。建議優先選擇例如 Q4_K_M 或 INT4 等高度量化版本 11。
+
+即使是 INT4 量化的 Gemma 3-4b，在僅有 1,024 token 的短上下文下，其 VRAM 需求也高達 3.45GB 7。這仍然遠超使用者的 2GB 專屬 VRAM，但由於模型權重體積已大幅縮小，分流成功的可能性會顯著增加。下表提供了不同量化等級的 Gemma 3-4b 的 VRAM 需求估算，以供使用者參考。
+量化等級
+1,024 tokens 所需 VRAM (GB)
+推薦 GPU 配置
+FP16
+10.53
+1x RTX 3060 (12GB) 或更高
+INT8
+5.81
+1x RTX 3060 (12GB) 或更高
+INT4 / Ollama
+3.45
+1x RTX 3060 (12GB) 或更高
+
+2. 調整 LM Studio 參數：
+LM Studio 提供了多個參數，允許使用者手動調整模型載入和推論行為 4。針對使用者的硬體配置，以下調整策略值得嘗試：
+手動分流層數： LM Studio 允許使用者手動指定載入到 GPU 上的層數（n-gpu-layers）12。對於 2GB 專屬 VRAM，將所有層都載入 GPU 是不可能的。建議使用者從一個較小的數字開始實驗（例如，設定 10 層或 15 層），並逐漸增加，直到達到記憶體容量上限。
+啟用半精度 KV 快取： 在 LM Studio 的進階設定中，啟用 useFp16ForKVCache 選項可以將關鍵值快取（KV Cache）的儲存精度從 32 位元浮點數（FP32）降至 16 位元（FP16）4。KV 快取是注意力機制的重要組成部分，其大小隨上下文長度線性增加，尤其是在長文本處理中會佔用大量 VRAM。將其減半可以顯著釋放記憶體空間，讓更多的模型層能被分流到 GPU 上。
+調整 evalBatchSize： 減少批次大小（evalBatchSize）也可以降低記憶體需求，但這會犧牲推論速度 4。使用者可以在效能和記憶體之間找到一個平衡點。
+
+4.2. 針對未來模型與用例的優化建議
+
+VRAM 需求的經驗法則： 在下載任何新模型之前，使用者可以根據一個簡單的經驗法則來預估其 VRAM 需求。通常，模型的實際 VRAM 佔用是其權重文件大小加上額外的框架開銷、KV 快取和活化層（Activations）所佔的空間 3。一個好的估算方法是在模型的權重文件大小之外，額外預留 1GB 到 2GB 的 VRAM，以確保有足夠的緩衝空間。對於使用者 2GB 的 MX350，這意味著只有那些經過高度量化、文件大小在 1GB 左右的微型模型，才能完全載入專屬 VRAM，而其他任何模型都需要分流才能運作。
+考慮替代推論引擎： 如果 LM Studio 的表現不理想，使用者可以考慮其他本地推論工具，如 Ollama 或 llama.cpp。不同的工具可能針對特定模型有不同的優化，從而提供更好的效能或更穩定的記憶體管理 12。
+長期硬體考量： 雖然軟體優化可以改善體驗，但最終的性能瓶頸仍然是硬體。對於希望流暢運行大型或多模態模型的技術愛好者而言，升級至具備 8GB 或 12GB VRAM 的 GPU 將顯著改善體驗，減少對分流的依賴，並允許運行更高精度的模型 3。
+
+結論：兩個架構的故事
+
+本報告的分析最終總結為一個關於兩種 LLM 架構截然不同命運的故事。使用者在 LM Studio 中載入 DeepSeek 與 Gemma 時所觀察到的記憶體分流差異，並非偶然的技術錯誤，而是兩種模型根本性設計哲學的體現。DeepSeek 的 MoE 架構天生具備模組化與稀疏性，使其與 LM Studio 的分流優化邏輯完美契合，從而實現了專屬 VRAM 與共享記憶體的高效協同。相反，Gemma 3 的多模態設計將一個龐大的視覺編碼器緊密地整合到模型中，這給 LM Studio 的分流能力帶來了難以克服的挑戰，導致其在 VRAM 受限的環境下無法有效利用共享記憶體。
+這項分析提供了深入的技術闡釋與可行的操作指南。透過理解模型架構、文件格式與推論引擎之間的複雜互動，使用者將能夠超越簡單的表面觀察，基於對其硬體、軟體和模型的深入理解，做出更明智的選擇。這不僅解決了當前的問題，也為未來的本地 LLM 探索鋪平了道路，讓使用者能夠更好地在本地設備上駕馭不斷發展的人工智慧技術。
+
+Works cited
+DeepSeek R1's Reasoning Power vs Gemma 3's Versatility - Novita AI Blog, accessed September 2, 2025, https://blogs.novita.ai/deepseek-r1-vs-gemma-3/
+LM Studio 0.3.23, accessed September 2, 2025, https://lmstudio.ai/blog/lmstudio-v0.3.23
+System Requirements for DeepSeek-R1 8B: 2025 Guide - BytePlus, accessed September 2, 2025, https://www.byteplus.com/en/topic/406446
+LLMLoadModelConfig | LM Studio Docs, accessed September 2, 2025, https://lmstudio.ai/docs/typescript/api-reference/llm-load-model-config
+LLM GGUF Guide: File Format, Structure, and How It Works - ApX Machine Learning, accessed September 2, 2025, https://apxml.com/posts/gguf-explained-llm-file-format
+GGUF, the long way around | Vicki Boykis, accessed September 2, 2025, https://vickiboykis.com/2024/02/28/gguf-the-long-way-around/
+Gemma 3 4B: Specifications and GPU VRAM Requirements - ApX Machine Learning, accessed September 2, 2025, https://apxml.com/models/gemma-3-4b
+google/gemma-3-4b-it - Hugging Face, accessed September 2, 2025, https://huggingface.co/google/gemma-3-4b-it
+Gemma 3 Technical Report - Googleapis.com, accessed September 2, 2025, https://storage.googleapis.com/deepmind-media/gemma/Gemma3Report.pdf
+Gemma 3 Technical Report - arXiv, accessed September 2, 2025, https://arxiv.org/pdf/2503.19786
+Why ollama Gemma3:4b QAT uses almost 6GB Memory when LM studio google GGUF uses around 3GB - Reddit, accessed September 2, 2025, https://www.reddit.com/r/ollama/comments/1k49h4s/why_ollama_gemma34b_qat_uses_almost_6gb_memory/
+Gemma 3: How to Run & Fine-tune | Unsloth Documentation, accessed September 2, 2025, https://docs.unsloth.ai/basics/gemma-3-how-to-run-and-fine-tune
+Gemma explained: What's new in Gemma 3 - Google Developers Blog, accessed September 2, 2025, https://developers.googleblog.com/en/gemma-explained-whats-new-in-gemma-3/
+Gemma3:4b not using the gpu while gemma3:1b does on orin Jetson Nano super, accessed September 2, 2025, https://forums.developer.nvidia.com/t/gemma3-4b-not-using-the-gpu-while-gemma3-1b-does-on-orin-jetson-nano-super/334583
+First local support for Gemma-3n Vision Capability : r/LocalLLaMA - Reddit, accessed September 2, 2025, https://www.reddit.com/r/LocalLLaMA/comments/1n2sw6l/first_local_support_for_gemma3n_vision_capability/
+Intel Iris Xe Graphics vs Nvidia: Detailed Comparison - PC International, accessed September 2, 2025, https://pcinternational.co.za/intel-iris-xe-graphics-vs-nvidia/
+How to Reduce Shared GPU Memory in Windows 10/11 - Microsoft Learn, accessed September 2, 2025, https://learn.microsoft.com/en-us/answers/questions/3880556/how-to-reduce-shared-gpu-memory-in-windows-10-11
+how do I manually force change my GPU's "shared gpu memory" to be higher? - Reddit, accessed September 2, 2025, https://www.reddit.com/r/techsupport/comments/10go9n0/how_do_i_manually_force_change_my_gpus_shared_gpu/
+Best Local LLMs for Every NVIDIA RTX 40 Series GPU - ApX Machine Learning, accessed September 2, 2025, https://apxml.com/posts/best-local-llm-rtx-40-gpu
+Gemma 3 model overview | Google AI for Developers - Gemini API, accessed September 2, 2025, https://ai.google.dev/gemma/docs/core
+Deepseek R1 8B Requirements: Specs & System Needs 2025 - BytePlus, accessed September 2, 2025, https://www.byteplus.com/en/topic/416508
