@@ -1,4 +1,4 @@
-
+<pre>
 探討本地 LLM 記憶體分流的深層原因：以 DeepSeek 與 Gemma 為例
 
 
@@ -113,6 +113,8 @@ VRAM 需求的經驗法則： 在下載任何新模型之前，使用者可以�
 本報告的分析最終總結為一個關於兩種 LLM 架構截然不同命運的故事。使用者在 LM Studio 中載入 DeepSeek 與 Gemma 時所觀察到的記憶體分流差異，並非偶然的技術錯誤，而是兩種模型根本性設計哲學的體現。DeepSeek 的 MoE 架構天生具備模組化與稀疏性，使其與 LM Studio 的分流優化邏輯完美契合，從而實現了專屬 VRAM 與共享記憶體的高效協同。相反，Gemma 3 的多模態設計將一個龐大的視覺編碼器緊密地整合到模型中，這給 LM Studio 的分流能力帶來了難以克服的挑戰，導致其在 VRAM 受限的環境下無法有效利用共享記憶體。
 這項分析提供了深入的技術闡釋與可行的操作指南。透過理解模型架構、文件格式與推論引擎之間的複雜互動，使用者將能夠超越簡單的表面觀察，基於對其硬體、軟體和模型的深入理解，做出更明智的選擇。這不僅解決了當前的問題，也為未來的本地 LLM 探索鋪平了道路，讓使用者能夠更好地在本地設備上駕馭不斷發展的人工智慧技術。
 
+
+
 Works cited
 DeepSeek R1's Reasoning Power vs Gemma 3's Versatility - Novita AI Blog, accessed September 2, 2025, https://blogs.novita.ai/deepseek-r1-vs-gemma-3/
 LM Studio 0.3.23, accessed September 2, 2025, https://lmstudio.ai/blog/lmstudio-v0.3.23
@@ -135,3 +137,5 @@ how do I manually force change my GPU's "shared gpu memory" to be higher? - Redd
 Best Local LLMs for Every NVIDIA RTX 40 Series GPU - ApX Machine Learning, accessed September 2, 2025, https://apxml.com/posts/best-local-llm-rtx-40-gpu
 Gemma 3 model overview | Google AI for Developers - Gemini API, accessed September 2, 2025, https://ai.google.dev/gemma/docs/core
 Deepseek R1 8B Requirements: Specs & System Needs 2025 - BytePlus, accessed September 2, 2025, https://www.byteplus.com/en/topic/416508
+
+</pre>
