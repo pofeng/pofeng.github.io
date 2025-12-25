@@ -1,0 +1,17 @@
+---
+layout: single
+title: "目錄 a 檔案列表"
+permalink: /a/
+---
+
+以下是目錄 `a/` 下的檔案列表：
+
+<ul>
+  {% for file in site.static_files %}
+    {% if file.path contains '/a/' %}
+      {% if file.name != "index.html" %}
+        <li><a href="{{ file.path | relative_url }}">{{ file.name }}</a></li>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+</ul>
