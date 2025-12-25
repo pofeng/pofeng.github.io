@@ -15,9 +15,9 @@ baseurl: # the subpath of your site, e.g. "/blog"
 author:
   name: "Pofeng Lee"
   avatar: # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
-  bio: "A short bio about yourself"
+  bio: "a pediatrician who loves to promote open source in his spare time"
   location: "Taiwan"
-  email: "your-email@example.com"
+  email: "pofeng@gmail.com"
   links:
     - label: "Website"
       icon: "fas fa-fw fa-link"
