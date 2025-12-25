@@ -31,12 +31,33 @@ permalink: /a/
 
 {% if dir_name != current_dir %}
 {% if current_dir != "" %}</ul>{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const links = document.querySelectorAll('.file-link');
+        links.forEach(link => {
+            if (link.href.endsWith('.html')) {
+                fetch(link.href)
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const title = doc.querySelector('title');
+                        if (title && title.innerText.trim()) {
+                            link.innerText = title.innerText.trim();
+                        }
+                    })
+                    .catch(err => console.error('Error fetching title for ' + link.href, err));
+            }
+        });
+    });
+</script>
 <h3>{{ dir_name }}</h3>
 <ul>
     {% assign current_dir = dir_name %}
     {% endif %}
 
-    <li><a href="{{ file.path | relative_url }}">{{ file.name }}</a></li>
+    <li><a href="{{ file.path | relative_url }}" class="file-link">{{ file.name }}</a></li>
     {% endfor %}
 
     {% if current_dir != "" %}
