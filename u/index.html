@@ -6,7 +6,7 @@ permalink: /u/
 
 以下是目錄 `u/` 下的檔案列表（依目錄分組）：
 
-{% assign files = site.static_files | where_exp: "item", "item.path contains '/a/'" %}
+{% assign files = site.static_files | where_exp: "item", "item.path contains '/u/'" %}
 {% assign groups = files | map: "path" %}
 
 {% comment %}
