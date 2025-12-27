@@ -19,10 +19,10 @@ author:
   location: "Taiwan"
   email: "pofeng@gmail.com"
   links:
-    - label: "Website"
+    - label: "個人網站"
       icon: "fas fa-fw fa-link"
       url: "https://web.pofeng.org"
-    - label: "文章"
+    - label: "檔案列表"
       icon: "fas fa-fw fa-file-alt"
       url: "/a/"
     - label: "Twitter"
