@@ -1,0 +1,64 @@
+---
+layout: single
+title: "網頁工具列表"
+permalink: /u/
+---
+
+以下是目錄 `u/` 下的檔案列表（依目錄分組）：
+
+{% assign files = site.static_files | where_exp: "item", "item.path contains '/a/'" %}
+{% assign groups = files | map: "path" %}
+
+{% comment %}
+簡單的邏輯：遍歷檔案，手動分類
+{% endcomment %}
+
+{% assign current_dir = "" %}
+
+{% for file in files %}
+{% if file.name == "index.html" %}{% continue %}{% endif %}
+
+{% comment %} 提取路徑中的目錄部分 {% endcomment %}
+{% assign path_parts = file.path | split: "/" %}
+{% comment %} 假設路徑格式為 /a/subdir/file.ext 或 /a/file.ext {% endcomment %}
+{% comment %} path_parts[0] 是空的, [1] 是 a, [2] 可能是子目錄或檔名 {% endcomment %}
+
+{% if path_parts[3] %}
+{% assign dir_name = path_parts[2] %}
+{% else %}
+{% assign dir_name = "根目錄" %}
+{% endif %}
+
+{% if dir_name != current_dir %}
+{% if current_dir != "" %}</ul>{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const links = document.querySelectorAll('.file-link');
+        links.forEach(link => {
+            if (link.href.endsWith('.html')) {
+                fetch(link.href)
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const title = doc.querySelector('title');
+                        if (title && title.innerText.trim()) {
+                            link.innerText = title.innerText.trim();
+                        }
+                    })
+                    .catch(err => console.error('Error fetching title for ' + link.href, err));
+            }
+        });
+    });
+</script>
+<h3>{{ dir_name }}</h3>
+<ul>
+    {% assign current_dir = dir_name %}
+    {% endif %}
+
+    <li><a href="{{ file.path | relative_url }}" class="file-link">{{ file.name }}</a></li>
+    {% endfor %}
+
+    {% if current_dir != "" %}
+</ul>{% endif %}
