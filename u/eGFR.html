@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eGFR 計算器 (CKD-EPI 2021)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+            --border-color: #d1d5db;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .calculator-card {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            color: #111827;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+            background-color: #fff;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-wrapper {
+            flex: 2;
+        }
+
+        .unit-select {
+            flex: 1;
+        }
+
+        .btn {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.85rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 1rem;
+        }
+
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        .result-area {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            display: none; /* 初始隱藏 */
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .result-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            line-height: 1.2;
+            margin: 0.5rem 0;
+        }
+
+        .result-unit {
+            font-size: 1rem;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        .stage-badge {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .stage-desc {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #4b5563;
+        }
+
+        /* CKD Stage Colors */
+        .stage-normal { background-color: #d1fae5; color: #065f46; } /* Green */
+        .stage-mild { background-color: #ecfccb; color: #3f6212; } /* Light Green */
+        .stage-moderate-a { background-color: #fef3c7; color: #92400e; } /* Yellow */
+        .stage-moderate-b { background-color: #ffedd5; color: #9a3412; } /* Orange */
+        .stage-severe { background-color: #fee2e2; color: #991b1b; } /* Red-Light */
+        .stage-failure { background-color: #fca5a5; color: #7f1d1d; } /* Red */
+
+        .disclaimer {
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: #9ca3af;
+            text-align: center;
+            line-height: 1.4;
+            border-top: 1px solid #f3f4f6;
+            padding-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator-card">
+    <h1>eGFR 計算器</h1>
+    <div class="subtitle">採用 CKD-EPI 2021 公式 (不分種族)</div>
+    
+    <form id="egfrForm" onsubmit="calculate(event)">
+        <div class="form-group">
+            <label for="gender">生理性別</label>
+            <select id="gender" required>
+                <option value="female">女性 (Female)</option>
+                <option value="male">男性 (Male)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="age">年齡</label>
+            <input type="number" id="age" placeholder="請輸入年齡" min="1" max="120" required>
+        </div>
+
+        <div class="form-group">
+            <label for="creatinine">血清肌酸酐 (Creatinine)</label>
+            <div class="input-group">
+                <div class="input-wrapper">
+                    <input type="number" id="creatinine" placeholder="數值" step="0.01" min="0.1" required>
+                </div>
+                <select id="unit" class="unit-select">
+                    <option value="mgdl">mg/dL</option>
+                    <option value="umol">µmol/L</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="submit" class="btn">計算結果</button>
+    </form>
+
+    <div id="resultArea" class="result-area">
+        <div class="result-label">估算腎絲球過濾率</div>
+        <div class="result-value" id="egfrValue">--</div>
+        <div class="result-unit">mL/min/1.73m²</div>
+        
+        <div id="stageBadge" class="stage-badge"></div>
+        <div id="stageDesc" class="stage-desc"></div>
+    </div>
+
+    <div class="disclaimer">
+        <strong>免責聲明：</strong> 本工具僅供參考，計算結果不能替代專業醫療診斷。
+        公式適用於病情穩定的成人，對於急性腎損傷、肌肉量異常（如截肢或健美選手）或懷孕婦女可能不準確。
+        請務必諮詢醫師解讀檢驗報告。
+    </div>
+</div>
+
+<script>
+    /**
+     * CKD-EPI 2021 Creatinine Equation
+     * eGFR = 142 * min(Scr/k, 1)^a * max(Scr/k, 1)^-1.200 * 0.9938^Age * 1.012 [if female]
+     * * Variables:
+     * Scr = Serum Creatinine (standardized to mg/dL)
+     * k = 0.7 (female), 0.9 (male)
+     * a = -0.241 (female), -0.302 (male)
+     */
+
+    function calculate(event) {
+        event.preventDefault();
+
+        // 1. 獲取輸入
+        const gender = document.getElementById('gender').value;
+        const age = parseFloat(document.getElementById('age').value);
+        let scr = parseFloat(document.getElementById('creatinine').value);
+        const unit = document.getElementById('unit').value;
+
+        // 2. 驗證
+        if (isNaN(age) || isNaN(scr) || age <= 0 || scr <= 0) {
+            alert("請輸入有效的年齡和肌酸酐數值。");
+            return;
+        }
+
+        // 3. 單位轉換 (如果輸入是 µmol/L，轉為 mg/dL)
+        // 1 mg/dL = 88.4 µmol/L
+        if (unit === 'umol') {
+            scr = scr / 88.4;
+        }
+
+        // 4. 設定公式常數 (Kappa, Alpha, Gender Factor)
+        let k, a, genderFactor;
+        
+        if (gender === 'female') {
+            k = 0.7;
+            a = -0.241;
+            genderFactor = 1.012;
+        } else {
+            k = 0.9;
+            a = -0.302;
+            genderFactor = 1.0; // 男性係數為 1 (公式中沒有額外乘數)
+        }
+
+        // 5. 計算邏輯
+        // Term 1: 142
+        // Term 2: min(Scr/k, 1)^a
+        // Term 3: max(Scr/k, 1)^-1.200
+        // Term 4: 0.9938^Age
+        // Term 5: Gender Factor
+
+        const ratio = scr / k;
+        const term2 = Math.pow(Math.min(ratio, 1), a);
+        const term3 = Math.pow(Math.max(ratio, 1), -1.200);
+        const term4 = Math.pow(0.9938, age);
+
+        const eGFR = 142 * term2 * term3 * term4 * genderFactor;
+
+        // 6. 顯示結果
+        displayResult(eGFR);
+    }
+
+    function displayResult(value) {
+        const resultArea = document.getElementById('resultArea');
+        const valueElement = document.getElementById('egfrValue');
+        const badgeElement = document.getElementById('stageBadge');
+        const descElement = document.getElementById('stageDesc');
+
+        // 顯示區域可見
+        resultArea.style.display = 'block';
+        
+        // 四捨五入到小數點後一位
+        const formattedValue = value.toFixed(1);
+        valueElement.textContent = formattedValue;
+
+        // 判斷 CKD 分期 (KDIGO 指南)
+        let stageInfo = { text: '', class: '', desc: '' };
+
+        if (value >= 90) {
+            stageInfo = { text: 'G1 正常或偏高', class: 'stage-normal', desc: '腎功能正常，但若有蛋白尿需注意。' };
+        } else if (value >= 60) {
+            stageInfo = { text: 'G2 輕度下降', class: 'stage-mild', desc: '腎功能輕度受損，需定期追蹤。' };
+        } else if (value >= 45) {
+            stageInfo = { text: 'G3a 輕中度下降', class: 'stage-moderate-a', desc: '中度受損，應積極控制血壓與血糖。' };
+        } else if (value >= 30) {
+            stageInfo = { text: 'G3b 中重度下降', class: 'stage-moderate-b', desc: '重度受損，需評估併發症。' };
+        } else if (value >= 15) {
+            stageInfo = { text: 'G4 重度下降', class: 'stage-severe', desc: '腎功能嚴重受損，準備腎臟替代療法。' };
+        } else {
+            stageInfo = { text: 'G5 腎衰竭', class: 'stage-failure', desc: '末期腎臟病，可能需要透析或移植。' };
+        }
+
+        // 更新 UI 樣式
+        badgeElement.textContent = stageInfo.text;
+        badgeElement.className = `stage-badge ${stageInfo.class}`;
+        descElement.textContent = stageInfo.desc;
+    }
+</script>
+
+</body>
+</html>
