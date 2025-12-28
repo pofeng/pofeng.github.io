@@ -1,0 +1,70 @@
+---
+layout: single
+title: "檔案列表"
+author_profile: true
+permalink: /list/
+---
+
+以下是根目錄下的檔案列表（優先顯示根目錄檔案）：
+
+{% assign files = site.static_files | where_exp: "item", "item.path contains '/'" %}
+{% assign root_files = "" | split: "" %}
+{% assign sub_files = "" | split: "" %}
+
+{% for file in files %}
+{% if file.name == "index.html" or file.name == "list.html" %}{% continue %}{% endif %}
+{% assign path_parts = file.path | split: "/" %}
+{% if path_parts.size == 2 %}
+{% assign root_files = root_files | push: file %}
+{% elsif path_parts.size > 2 %}
+{% assign sub_files = sub_files | push: file %}
+{% endif %}
+{% endfor %}
+
+{% assign sorted_sub_files = sub_files | sort: "path" %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const links = document.querySelectorAll('.file-link');
+        links.forEach(link => {
+            if (link.href.endsWith('.html')) {
+                fetch(link.href)
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const title = doc.querySelector('title');
+                        if (title && title.innerText.trim()) {
+                            link.innerText = title.innerText.trim();
+                        }
+                    })
+                    .catch(err => console.error('Error fetching title for ' + link.href, err));
+            }
+        });
+    });
+</script>
+
+<h3>根目錄</h3>
+<ul>
+    {% for file in root_files %}
+    <li><a href="{{ file.path | relative_url }}" class="file-link">{{ file.name }}</a></li>
+    {% endfor %}
+</ul>
+
+{% assign current_dir = "" %}
+{% for file in sorted_sub_files %}
+{% assign path_parts = file.path | split: "/" %}
+{% assign dir_name = path_parts[1] %}
+
+{% if dir_name != current_dir %}
+{% if current_dir != "" %}</ul>{% endif %}
+<h3>{{ dir_name }}/</h3>
+<ul>
+    {% assign current_dir = dir_name %}
+    {% endif %}
+    <li><a href="{{ file.path | relative_url }}" class="file-link">{{ file.name }}</a></li>
+    {% endfor %}
+
+    {% if current_dir != "" %}
+</ul>
+{% endif %}
