@@ -24,7 +24,7 @@ author:
       url: "https://web.pofeng.org"
     - label: "檔案列表"
       icon: "fas fa-fw fa-file-alt"
-      url: "/a/"
+      url: "/list/"
     - label: "Twitter"
       icon: "fab fa-fw fa-twitter-square"
       url: "https://twitter.com/pofeng"
