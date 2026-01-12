@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helios: 太陽視運動軌跡模擬器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            background-color: #0f172a; /* Slate 950 */
+            color: #e2e8f0;
+            overflow: hidden;
+            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
+            margin: 0;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+        input[type=range] {
+            accent-color: #3b82f6; 
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+  }
+}
+</script>
+</head>
+<body class="flex flex-col lg:flex-row h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
+
+    <!-- Sidebar / Controls -->
+    <div class="order-2 lg:order-1 flex-shrink-0 z-20 w-full lg:w-96 bg-slate-800/80 backdrop-blur border-t lg:border-t-0 lg:border-r border-slate-700 p-6 flex flex-col gap-6 overflow-y-auto h-auto lg:h-full">
+        
+        <!-- Header -->
+        <div>
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <i data-lucide="sun" class="w-5 h-5 text-yellow-500"></i> Helios 控制面板
+            </h2>
+            <p class="text-slate-400 text-sm">太陽視運動模擬</p>
+        </div>
+
+        <!-- Playback -->
+        <div class="flex items-center gap-4 bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+            <button id="btn-play" class="p-3 rounded-full flex items-center justify-center transition-colors bg-green-500/20 text-green-400 hover:bg-green-500/30">
+                <i id="icon-play" data-lucide="play" class="w-5 h-5 ml-1"></i>
+            </button>
+            <div class="flex-1">
+                <div class="text-xs text-slate-400 mb-1 flex justify-between">
+                    <span id="display-time">12:00</span>
+                    <span>速度: 1x</span>
+                </div>
+                <input type="range" id="input-time" min="0" max="24" step="0.05" value="12" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+            </div>
+            <button id="btn-reset" class="p-2 text-slate-400 hover:text-white">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Inputs -->
+        <div class="space-y-6">
+            <!-- Latitude -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center text-sm">
+                    <label class="flex items-center gap-2 text-slate-300">
+                        <i data-lucide="map-pin" class="w-4 h-4"></i> 緯度
+                    </label>
+                    <input type="number" id="input-lat-num" min="-90" max="90" value="34.05" class="w-20 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-right font-mono text-blue-300 focus:outline-none focus:border-blue-500">
+                </div>
+                <input type="range" id="input-lat-slider" min="-90" max="90" step="0.1" value="34.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-xs text-slate-500">
+                    <span>南極 (-90)</span>
+                    <span>北極 (90)</span>
+                </div>
+            </div>
+
+            <!-- Date -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center text-sm mb-1">
+                    <label class="flex items-center gap-2 text-slate-300">
+                        <i data-lucide="calendar" class="w-4 h-4"></i> 日期
+                    </label>
+                    <span id="display-season" class="text-xs text-slate-500">冬季</span>
+                </div>
+                <input type="date" id="input-date" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-purple-500 mb-2">
+                <input type="range" id="input-day" min="1" max="365" value="52" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                <div class="flex justify-between text-xs text-slate-500 px-1">
+                    <span>1月</span>
+                    <span>12月</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Presets -->
+        <div class="pt-4 border-t border-slate-700">
+            <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">快速定位</h3>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="window.app.setLat(25.03)" class="text-xs bg-slate-700 hover:bg-slate-600 py-2 rounded text-slate-300">台北 (25.0°)</button>
+                <button onclick="window.app.setLat(51.5)" class="text-xs bg-slate-700 hover:bg-slate-600 py-2 rounded text-slate-300">倫敦 (51.5°)</button>
+                <button onclick="window.app.setLat(40.7)" class="text-xs bg-slate-700 hover:bg-slate-600 py-2 rounded text-slate-300">紐約 (40.7°)</button>
+                <button onclick="window.app.setLat(-33.9)" class="text-xs bg-slate-700 hover:bg-slate-600 py-2 rounded text-slate-300">雪梨 (-33.9°)</button>
+                <button onclick="window.app.setLat(0)" class="text-xs bg-slate-700 hover:bg-slate-600 py-2 rounded text-slate-300">赤道 (0°)</button>
+                <button onclick="window.app.setLat(23.5)" class="text-xs bg-slate-700 hover:bg-slate-600 py-2 rounded text-slate-300">北回歸線</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Viewport -->
+    <div class="order-1 lg:order-2 flex-1 relative flex flex-col h-full">
+        
+        <!-- Sky Visualization Area -->
+        <div class="flex-1 relative bg-slate-900 shadow-inner overflow-hidden" id="scene-container">
+            
+            <!-- Absolute Date Display -->
+            <div class="absolute top-4 left-1/2 -translate-x-1/2 text-slate-500 text-sm font-mono z-10 opacity-60 bg-slate-900/50 px-3 py-1 rounded-full backdrop-blur-sm">
+                太陽時 <span id="display-time-overlay">12:00</span>
+            </div>
+
+            <!-- Earth Schematic Overlay -->
+            <div class="absolute top-4 right-4 z-10 hidden md:block">
+                <div class="bg-slate-900/80 backdrop-blur border border-slate-700 rounded-xl p-4 select-none flex flex-col items-center shadow-xl">
+                    <div class="text-xs text-slate-400 mb-2 font-mono tracking-wider">公轉軌道示意圖</div>
+                    <div style="width: 220px; height: 220px;">
+                        <svg width="220" height="220" viewBox="0 0 220 220" id="earth-schematic-svg">
+                            <!-- SVG Content generated by JS -->
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sky Dome SVG -->
+            <div class="relative w-full h-full flex items-center justify-center">
+                <svg id="skydome-svg" viewBox="0 0 600 400" class="w-full h-full max-w-[800px] select-none">
+                     <!-- SVG Content generated by JS -->
+                </svg>
+                
+                <!-- Legend -->
+                <div class="absolute top-4 left-4 text-xs space-y-1 pointer-events-none opacity-70">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-0.5 bg-red-300 opacity-50"></div> <span class="text-slate-400">夏至</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-0.5 bg-blue-300 opacity-50"></div> <span class="text-slate-400">冬至</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-0.5 bg-green-300 opacity-50"></div> <span class="text-slate-400">春分/秋分</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="bg-slate-950 border-t border-slate-800 p-4 z-10">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 w-full max-w-4xl mx-auto">
+                <!-- Altitude -->
+                <div class="flex items-center gap-3 p-2">
+                    <div class="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400">
+                        <i data-lucide="sun" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400">太陽高度角</p>
+                        <p id="info-altitude" class="text-lg font-mono font-bold text-white">0.0°</p>
+                    </div>
+                </div>
+                <!-- Azimuth -->
+                <div class="flex items-center gap-3 p-2">
+                    <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                        <span class="font-bold text-sm">Az</span>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400">方位角</p>
+                        <p id="info-azimuth" class="text-lg font-mono font-bold text-white">0.0°</p>
+                    </div>
+                </div>
+                <!-- Declination -->
+                <div class="flex items-center gap-3 p-2">
+                    <div class="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">
+                        <i data-lucide="arrow-up" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400">赤緯</p>
+                        <p id="info-declination" class="text-lg font-mono font-bold text-white">0.0°</p>
+                    </div>
+                </div>
+                <!-- Day Length -->
+                <div class="flex items-center gap-3 p-2">
+                    <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                        <i data-lucide="clock" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400">白晝長度</p>
+                        <p id="info-daylength" class="text-lg font-mono font-bold text-white">0小時 0分</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- Application State ---
+    const state = {
+        latitude: 34.05,
+        dayOfYear: 52,
+        timeOfDay: 12,
+        isPlaying: false,
+        speed: 1
+    };
+
+    // --- Astronomy Services ---
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const toDeg = (rad) => (rad * 180) / Math.PI;
+
+    const getDeclination = (dayOfYear) => {
+        return -23.44 * Math.cos(toRad((360 / 365) * (dayOfYear + 10)));
+    };
+
+    const calculateSunPosition = (latitude, dayOfYear, localTime) => {
+        const latRad = toRad(latitude);
+        const declination = getDeclination(dayOfYear);
+        const declRad = toRad(declination);
+        
+        // Hour Angle (H)
+        const hourAngle = 15 * (localTime - 12);
+        const haRad = toRad(hourAngle);
+
+        // Elevation (Altitude)
+        const sinAlt = Math.sin(latRad) * Math.sin(declRad) +
+                       Math.cos(latRad) * Math.cos(declRad) * Math.cos(haRad);
+        const altitudeRad = Math.asin(sinAlt);
+        const altitude = toDeg(altitudeRad);
+
+        // Azimuth
+        const cosAz = (Math.sin(declRad) - Math.sin(latRad) * Math.sin(altitudeRad)) / (Math.cos(latRad) * Math.cos(altitudeRad));
+        let azRad = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+        let azDeg = toDeg(azRad);
+        
+        if (Math.sin(haRad) > 0) {
+            azDeg = 360 - azDeg;
+        }
+
+        return { azimuth: azDeg, altitude, declination, hourAngle };
+    };
+
+    const getDayLength = (latitude, dayOfYear) => {
+        const latRad = toRad(latitude);
+        const decRad = toRad(getDeclination(dayOfYear));
+        const tanTan = Math.tan(latRad) * Math.tan(decRad);
+        
+        if (tanTan <= -1) return 0;
+        if (tanTan >= 1) return 24;
+        
+        const haRad = Math.acos(-tanTan);
+        return (toDeg(haRad) / 15) * 2;
+    };
+
+    const getSeason = (dayOfYear, lat) => {
+        const isNorth = lat >= 0;
+        let season = '';
+        if (dayOfYear >= 80 && dayOfYear < 172) season = '春季';
+        else if (dayOfYear >= 172 && dayOfYear < 264) season = '夏季';
+        else if (dayOfYear >= 264 && dayOfYear < 355) season = '秋季';
+        else season = '冬季';
+
+        if (!isNorth) {
+            if (season === '春季') return '秋季';
+            if (season === '夏季') return '冬季';
+            if (season === '秋季') return '春季';
+            if (season === '冬季') return '夏季';
+        }
+        return season;
+    };
+
+    const dateToDayOfYear = (date) => {
+        const start = new Date(date.getFullYear(), 0, 0);
+        const diff = date.getTime() - start.getTime();
+        const oneDay = 1000 * 60 * 60 * 24;
+        return Math.floor(diff / oneDay) + 1;
+    };
+
+    const dayOfYearToISOString = (day) => {
+        const date = new Date(new Date().getFullYear(), 0, day);
+        const offset = date.getTimezoneOffset();
+        const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+        return localDate.toISOString().split('T')[0];
+    };
+
+    // --- Rendering: SkyDome ---
+    const skyWidth = 600;
+    const skyHeight = 400;
+    const skyCx = skyWidth / 2;
+    const skyCy = skyHeight * 0.7;
+    const skyRadius = 160;
+
+    const projectSky = (azimuthDeg, altitudeDeg) => {
+        const azRad = toRad(azimuthDeg);
+        const altRad = toRad(altitudeDeg);
+        
+        // Sphere coords (Y is Up, Z is North, X is East)
+        // Flip X for logic consistency with provided React code
+        const x = -Math.cos(altRad) * Math.sin(azRad);
+        const z = Math.cos(altRad) * Math.cos(azRad);
+        const y = Math.sin(altRad);
+
+        // View Transform (Az 270, Alt 20)
+        const viewAz = toRad(270);
+        
+        // Rotate around Y
+        const x1 = x * Math.cos(viewAz) - z * Math.sin(viewAz);
+        const z1 = x * Math.sin(viewAz) + z * Math.cos(viewAz);
+
+        const screenX = skyCx + x1 * skyRadius;
+        // Y projection with tilt
+        const screenY = skyCy - (y * skyRadius) + (z1 * skyRadius * 0.35);
+
+        return { x: screenX, y: screenY };
+    };
+
+    const generatePathPoints = (targetDay) => {
+        const points = [];
+        for (let i = 0; i <= 48; i++) {
+            const t = (i / 48) * 24;
+            const pos = calculateSunPosition(state.latitude, targetDay, t);
+            if (pos.altitude > -10) {
+                points.push(projectSky(pos.azimuth, pos.altitude));
+            }
+        }
+        return points;
+    };
+
+    const pointsToPathD = (pts) => {
+        if(pts.length === 0) return "";
+        return pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+    };
+
+    const renderSkyDome = () => {
+        const svg = document.getElementById('skydome-svg');
+        const sunPos = calculateSunPosition(state.latitude, state.dayOfYear, state.timeOfDay);
+        const skyOpacity = Math.max(0, Math.min(0.6, sunPos.altitude / 40));
+
+        // Paths
+        const summerPath = pointsToPathD(generatePathPoints(172));
+        const winterPath = pointsToPathD(generatePathPoints(355));
+        const equinoxPath = pointsToPathD(generatePathPoints(80));
+        const currentPathD = pointsToPathD(generatePathPoints(state.dayOfYear));
+
+        // Meridian
+        const meridianPts = [];
+        for(let i=0; i<=180; i+=5) {
+            if(i<=90) meridianPts.push(projectSky(0, i));
+            else meridianPts.push(projectSky(180, 180-i));
+        }
+        const meridianD = pointsToPathD(meridianPts);
+
+        // Labels Positions
+        const pN = projectSky(0, 0);
+        const pE = projectSky(90, 0);
+        const pS = projectSky(180, 0);
+        const pW = projectSky(270, 0);
+
+        // Labels for paths (approx middle)
+        const getLabelPos = (pts) => pts.length > 0 ? pts[Math.floor(pts.length/2)] : {x:0, y:0};
+        const sumLbl = getLabelPos(generatePathPoints(172));
+        const winLbl = getLabelPos(generatePathPoints(355));
+        const eqLbl = getLabelPos(generatePathPoints(80));
+
+        // Sun
+        const sunProj = projectSky(sunPos.azimuth, sunPos.altitude);
+        const sunVisible = sunPos.altitude > -2;
+
+        let html = `
+            <defs>
+                <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" stopColor="#fbbf24" stopOpacity="1" />
+                    <stop offset="60%" stopColor="#f59e0b" stopOpacity="0.5" />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+                </radialGradient>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+            
+            <circle cx="${skyCx}" cy="${skyCy}" r="${skyRadius * 2.5}" fill="#020617" />
+            <circle cx="${skyCx}" cy="${skyCy}" r="${skyRadius * 1.8}" fill="rgba(14, 165, 233, ${skyOpacity * 0.2})" />
+
+            <path d="${pointsToPathD(Array.from({length:73}, (_,i)=>projectSky(i*5, 0))) + ' Z'}" fill="rgba(30, 41, 59, 0.5)" stroke="#475569" stroke-width="1" />
+
+            <text x="${pN.x + 15}" y="${pN.y + 5}" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="bold">北</text>
+            <text x="${pE.x}" y="${pE.y + 15}" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="bold">東</text>
+            <text x="${pS.x - 15}" y="${pS.y + 5}" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="bold">南</text>
+            <text x="${pW.x}" y="${pW.y - 10}" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="bold">西</text>
+
+            <path d="${meridianD}" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="4 4" />
+
+            <path d="${summerPath}" fill="none" stroke="#fca5a5" stroke-width="1" stroke-opacity="0.3" />
+            <text x="${sumLbl.x + 5}" y="${sumLbl.y}" fill="#fca5a5" font-size="10" opacity="0.7">夏至</text>
+            
+            <path d="${winterPath}" fill="none" stroke="#93c5fd" stroke-width="1" stroke-opacity="0.3" />
+            <text x="${winLbl.x - 20}" y="${winLbl.y}" fill="#93c5fd" font-size="10" opacity="0.7">冬至</text>
+
+            <path d="${equinoxPath}" fill="none" stroke="#86efac" stroke-width="1" stroke-opacity="0.3" />
+            <text x="${eqLbl.x + 5}" y="${eqLbl.y}" fill="#86efac" font-size="10" opacity="0.7">春/秋分</text>
+
+            <path d="${currentPathD}" fill="none" stroke="#fbbf24" stroke-width="2" stroke-opacity="0.8" filter="url(#glow)" />
+        `;
+
+        if (sunVisible) {
+            const groundY = sunProj.y + (Math.sin(toRad(sunPos.altitude)) * skyRadius);
+            html += `
+                <line x1="${sunProj.x}" y1="${sunProj.y}" x2="${sunProj.x}" y2="${groundY}" stroke="#fbbf24" stroke-width="1" stroke-opacity="0.2" stroke-dasharray="2 2" />
+                <circle cx="${sunProj.x}" cy="${groundY}" r="3" fill="#fbbf24" opacity="0.3" />
+                <g>
+                    <circle cx="${sunProj.x}" cy="${sunProj.y}" r="8" fill="url(#sunGlow)" />
+                    <circle cx="${sunProj.x}" cy="${sunProj.y}" r="4" fill="#fff" />
+                </g>
+            `;
+        }
+
+        svg.innerHTML = html;
+    };
+
+    // --- Rendering: Earth Schematic ---
+    const renderEarthSchematic = () => {
+        const size = 220; 
+        const cx = size / 2;
+        const cy = size / 2;
+        const orbitRadius = 75; 
+        const earthRadius = 30; 
+        const sunRadius = 4.5;
+        const winterSolstice = 356;
+
+        const getOrbitalPos = (day) => {
+            const rad = ((day - winterSolstice) / 365) * 2 * Math.PI;
+            return {
+                x: cx + orbitRadius * Math.cos(rad),
+                y: cy - (orbitRadius * 0.85) * Math.sin(rad)
+            };
+        };
+
+        const pCur = getOrbitalPos(state.dayOfYear);
+        const pDec = getOrbitalPos(356);
+        const pMar = getOrbitalPos(80);
+        const pJun = getOrbitalPos(172);
+        const pSep = getOrbitalPos(266);
+
+        const latRad = toRad(state.latitude);
+        const latY = -earthRadius * Math.sin(latRad);
+        const latW = earthRadius * Math.cos(latRad);
+
+        const tropicRad = toRad(23.5);
+        const tropicY = earthRadius * Math.sin(tropicRad);
+        const tropicW = earthRadius * Math.cos(tropicRad);
+
+        const dx = cx - pCur.x;
+        const dy = cy - pCur.y;
+        const angleToSunRad = Math.atan2(dy, dx);
+        const angleToSunDeg = toDeg(angleToSunRad);
+
+        const maxDy = orbitRadius * 0.85;
+        const relativeY = (pCur.y - cy) / maxDy;
+        const phase = Math.max(-1, Math.min(1, relativeY));
+
+        const shadowPath = `M 0 -${earthRadius} A ${earthRadius} ${earthRadius} 0 0 0 0 ${earthRadius} Q ${phase * earthRadius} 0 0 -${earthRadius} Z`;
+
+        const svg = document.getElementById('earth-schematic-svg');
+        
+        let html = `
+            <defs>
+               <radialGradient id="orbitSunGradient" cx="50%" cy="50%" r="50%">
+                 <stop offset="0%" stopColor="#fbbf24" stopOpacity="1" />
+                 <stop offset="80%" stopColor="#f59e0b" stopOpacity="0.8" />
+                 <stop offset="100%" stopColor="#b45309" stopOpacity="0" />
+               </radialGradient>
+               <filter id="orbit-glow-sun">
+                 <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                 <feMerge>
+                   <feMergeNode in="coloredBlur"/>
+                   <feMergeNode in="SourceGraphic"/>
+                 </feMerge>
+               </filter>
+            </defs>
+
+            <ellipse cx="${cx}" cy="${cy}" rx="${orbitRadius}" ry="${orbitRadius * 0.85}" fill="none" stroke="#475569" stroke-width="1" stroke-dasharray="4 4" />
+
+            <text x="${pDec.x + 12}" y="${pDec.y}" text-anchor="start" dominant-baseline="middle" fill="#94a3b8" font-size="11" font-weight="bold">12月</text>
+            <text x="${pMar.x}" y="${pMar.y - 12}" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="bold">3月</text>
+            <text x="${pJun.x - 12}" y="${pJun.y}" text-anchor="end" dominant-baseline="middle" fill="#94a3b8" font-size="11" font-weight="bold">6月</text>
+            <text x="${pSep.x}" y="${pSep.y + 18}" text-anchor="middle" dominant-baseline="hanging" fill="#94a3b8" font-size="11" font-weight="bold">9月</text>
+
+            <circle cx="${cx}" cy="${cy}" r="${sunRadius}" fill="url(#orbitSunGradient)" filter="url(#orbit-glow-sun)" />
+        `;
+
+        [pDec, pMar, pJun, pSep].forEach(p => {
+            html += `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#475569" />`;
+        });
+
+        html += `
+            <g transform="translate(${pCur.x}, ${pCur.y})">
+                <circle r="${earthRadius}" fill="#3b82f6" stroke="#fff" stroke-width="1" />
+                <g transform="rotate(23.5)">
+                    <line x1="-${earthRadius}" y1="0" x2="${earthRadius}" y2="0" stroke="#cbd5e1" stroke-width="1" opacity="0.6" />
+                    <line x1="-${tropicW}" y1="-${tropicY}" x2="${tropicW}" y2="-${tropicY}" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2" opacity="0.5" />
+                    <line x1="-${tropicW}" y1="${tropicY}" x2="${tropicW}" y2="${tropicY}" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2" opacity="0.5" />
+                    <line x1="-${latW}" y1="${latY}" x2="${latW}" y2="${latY}" stroke="#ef4444" stroke-width="2" />
+                </g>
+                <g transform="rotate(${angleToSunDeg})">
+                     <path d="${shadowPath}" fill="black" opacity="0.65" />
+                </g>
+                <g transform="rotate(23.5)">
+                    <line x1="0" y1="-${earthRadius+10}" x2="0" y2="${earthRadius+10}" stroke="#cbd5e1" stroke-width="1.5" />
+                    <text x="5" y="-${earthRadius+6}" font-size="10" fill="#cbd5e1" font-weight="bold">N</text>
+                </g>
+            </g>
+        `;
+
+        svg.innerHTML = html;
+    };
+
+    // --- UI Update & Logic ---
+    const updateUI = () => {
+        document.getElementById('display-time').textContent = `${Math.floor(state.timeOfDay).toString().padStart(2, '0')}:${(Math.floor((state.timeOfDay % 1) * 60)).toString().padStart(2, '0')}`;
+        document.getElementById('display-time-overlay').textContent = document.getElementById('display-time').textContent;
+        document.getElementById('input-time').value = state.timeOfDay;
+
+        document.getElementById('input-lat-num').value = state.latitude;
+        document.getElementById('input-lat-slider').value = state.latitude;
+
+        document.getElementById('input-date').value = dayOfYearToISOString(state.dayOfYear);
+        document.getElementById('input-day').value = state.dayOfYear;
+
+        const season = getSeason(state.dayOfYear, state.latitude);
+        document.getElementById('display-season').textContent = season;
+
+        const btnPlay = document.getElementById('btn-play');
+        const iconPlay = document.getElementById('icon-play');
+        if (state.isPlaying) {
+            btnPlay.className = "p-3 rounded-full flex items-center justify-center transition-colors bg-red-500/20 text-red-400 hover:bg-red-500/30";
+            iconPlay.setAttribute('data-lucide', 'pause');
+        } else {
+            btnPlay.className = "p-3 rounded-full flex items-center justify-center transition-colors bg-green-500/20 text-green-400 hover:bg-green-500/30";
+            iconPlay.setAttribute('data-lucide', 'play');
+        }
+        lucide.createIcons();
+
+        const sunPos = calculateSunPosition(state.latitude, state.dayOfYear, state.timeOfDay);
+        const dayLength = getDayLength(state.latitude, state.dayOfYear);
+
+        document.getElementById('info-altitude').textContent = `${sunPos.altitude.toFixed(1)}°`;
+        document.getElementById('info-azimuth').textContent = `${sunPos.azimuth.toFixed(1)}°`;
+        document.getElementById('info-declination').textContent = `${sunPos.declination.toFixed(1)}°`;
+        
+        const h = Math.floor(dayLength);
+        const m = Math.round((dayLength - h) * 60);
+        document.getElementById('info-daylength').textContent = `${h}小時 ${m}分`;
+
+        renderSkyDome();
+        renderEarthSchematic();
+    };
+
+    const setLat = (val) => {
+        state.latitude = Math.max(-90, Math.min(90, val));
+        updateUI();
+    };
+
+    // Expose setLat for inline onclick handlers
+    window.app = { setLat };
+
+    // --- Event Listeners ---
+    document.getElementById('input-time').addEventListener('input', (e) => {
+        state.timeOfDay = parseFloat(e.target.value);
+        updateUI();
+    });
+
+    document.getElementById('input-lat-num').addEventListener('change', (e) => setLat(parseFloat(e.target.value)));
+    document.getElementById('input-lat-slider').addEventListener('input', (e) => setLat(parseFloat(e.target.value)));
+
+    document.getElementById('input-day').addEventListener('input', (e) => {
+        state.dayOfYear = parseInt(e.target.value);
+        updateUI();
+    });
+
+    document.getElementById('input-date').addEventListener('change', (e) => {
+        if(e.target.value) {
+            const date = new Date(e.target.value);
+            state.dayOfYear = dateToDayOfYear(date);
+            updateUI();
+        }
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+        state.timeOfDay = 12;
+        state.isPlaying = false;
+        updateUI();
+    });
+
+    document.getElementById('btn-play').addEventListener('click', () => {
+        state.isPlaying = !state.isPlaying;
+        updateUI();
+    });
+
+    // --- Animation Loop ---
+    const animate = (time) => {
+        if (state.isPlaying) {
+             let newTime = state.timeOfDay + 0.05;
+             if (newTime >= 24) newTime = 0;
+             state.timeOfDay = newTime;
+             updateUI();
+        }
+        requestAnimationFrame(animate);
+    };
+
+    // --- Init ---
+    lucide.createIcons();
+    updateUI();
+    requestAnimationFrame(animate);
+
+</script>
+</body>
+</html>
