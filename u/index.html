@@ -1,0 +1,44 @@
+---
+layout: single
+title: "u/ 檔案列表"
+author_profile: true
+permalink: /u/
+---
+
+以下是 u/ 目錄下的檔案列表：
+
+{% assign files = site.static_files | where_exp: "item", "item.path contains '/u/'" %}
+{% assign filtered_files = "" | split: "" %}
+
+{% for file in files %}
+{% if file.name == "index.html" %}{% continue %}{% endif %}
+{% assign filtered_files = filtered_files | push: file %}
+{% endfor %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const links = document.querySelectorAll('.file-link');
+        links.forEach(link => {
+            if (link.href.endsWith('.html')) {
+                fetch(link.href)
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const title = doc.querySelector('title');
+                        if (title && title.innerText.trim()) {
+                            link.innerText = title.innerText.trim();
+                        }
+                    })
+                    .catch(err => console.error('Error fetching title for ' + link.href, err));
+            }
+        });
+    });
+</script>
+
+<h3>u/ 目錄</h3>
+<ul>
+    {% for file in filtered_files %}
+    <li><a href="{{ file.path | relative_url }}" class="file-link">{{ file.name }}</a></li>
+    {% endfor %}
+</ul>
