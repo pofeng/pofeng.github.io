@@ -1,6 +1,6 @@
 安裝 win11 docker desktop
 執行 win11 docker desktop
-pull linuxserver/code-server image
+pull codercom/code-server:latest image
 啟動 docker image ( in PowerShell )
 
 docker run -d `
@@ -12,7 +12,7 @@ docker run -d `
   -e PGID=1000 `
   -e TZ=Asia/Taipei `
   -e PASSWORD=你的密碼 `
-  linuxserver/code-server:latest
+  codercom/code-server:latest
 
 你的密碼 ` => 中間記得留空白
 
