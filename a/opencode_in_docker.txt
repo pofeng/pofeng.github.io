@@ -4,7 +4,7 @@ pull codercom/code-server:latest image
 啟動 docker image ( in PowerShell )
 
 docker run -d `
-  --name test03 `
+  --name test04 `
   -p 8080:8443 `
   -p 4096:4096 `
   -v "$HOME\docker\code-server\config:/config" `
