@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Helios - 太陽視運動軌跡模擬器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        #controls {
+            margin-bottom: 20px;
+        }
+        #controls label {
+            margin-right: 10px;
+        }
+        #controls input, #controls select {
+            margin-right: 20px;
+        }
+        canvas {
+            border: 1px solid #000;
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="title">太陽視運動軌跡模擬器</h1>
+    <div id="controls">
+        <label for="lang">語言:</label>
+        <select id="lang">
+            <option value="zh">中文</option>
+            <option value="en">English</option>
+        </select>
+        <label for="lat">緯度:</label>
+        <input type="number" id="lat" min="-90" max="90" step="0.1" value="25">
+        <input type="range" id="lat-slider" min="-90" max="90" step="0.1" value="25">
+        <label for="date">日期:</label>
+        <input type="date" id="date" value="2024-06-21">
+        <br>
+        <label for="date-slider">日期滑桿:</label>
+        <input type="range" id="date-slider" min="1" max="365" value="172">
+    </div>
+    <canvas id="canvas" width="600" height="600"></canvas>
+    <script>
+        const translations = {
+            zh: {
+                title: '太陽視運動軌跡模擬器',
+                lat: '緯度',
+                date: '日期',
+                'date-slider': '日期滑桿'
+            },
+            en: {
+                title: 'Solar Path Simulator',
+                lat: 'Latitude',
+                date: 'Date',
+                'date-slider': 'Date Slider'
+            }
+        };
+
+        function updateUI(lang) {
+            document.title = translations[lang].title;
+            document.getElementById('title').textContent = translations[lang].title;
+            document.querySelector('label[for="lat"]').textContent = translations[lang].lat + ':';
+            document.querySelector('label[for="date"]').textContent = translations[lang].date + ':';
+            document.querySelector('label[for="date-slider"]').textContent = translations[lang]['date-slider'] + ':';
+        }
+
+        function getDayOfYear(date) {
+            const start = new Date(date.getFullYear(), 0, 1);
+            const diff = date - start;
+            return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+        }
+
+        function dateFromDayOfYear(year, day) {
+            const date = new Date(year, 0, day);
+            return date;
+        }
+
+        function getSolarDeclination(date) {
+            const dayOfYear = getDayOfYear(date);
+            const angle = (284 + dayOfYear) / 365.25 * 2 * Math.PI;
+            return 23.45 * Math.sin(angle) * Math.PI / 180; // radians
+        }
+
+        function drawSolarPath(canvas, lat, date) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 200;
+
+            // draw tilted horizon
+            const tiltAngle = 30 * Math.PI / 180; // 30 degrees
+            const horizonRadiusX = radius;
+            const horizonRadiusY = radius * Math.cos(tiltAngle);
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, horizonRadiusX, horizonRadiusY, tiltAngle, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#000';
+            ctx.stroke();
+
+            // labels - approximate positions
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#000';
+            const lang = document.getElementById('lang').value;
+            const labels = lang === 'zh' ? ['北方', '南方', '東方', '西方'] : ['North', 'South', 'East', 'West'];
+            ctx.fillText(labels[0], centerX + radius + 10, centerY);
+            ctx.fillText(labels[1], centerX - radius - 30, centerY);
+            ctx.fillText(labels[2], centerX, centerY + radius + 20);
+            ctx.fillText(labels[3], centerX, centerY - radius - 10);
+
+            // draw solstice paths
+            const solstices = {
+                '春分': new Date(new Date().getFullYear(), 2, 21),
+                '夏至': new Date(new Date().getFullYear(), 5, 21),
+                '秋分': new Date(new Date().getFullYear(), 8, 23),
+                '冬至': new Date(new Date().getFullYear(), 11, 21)
+            };
+            const colors = ['blue', 'red', 'green', 'orange'];
+            let idx = 0;
+            for (const [name, solDate] of Object.entries(solstices)) {
+                drawPath(ctx, lat, solDate, colors[idx], centerX, centerY, radius);
+                idx++;
+            }
+
+            // draw current date path
+            drawPath(ctx, lat, date, '#ff0000', centerX, centerY, radius);
+        }
+
+        function drawPath(ctx, lat, date, color, centerX, centerY, radius) {
+            const decl = getSolarDeclination(date);
+            const latRad = lat * Math.PI / 180;
+            const sunriseHA = Math.acos(-Math.tan(latRad) * Math.tan(decl));
+            const sunsetHA = -sunriseHA;
+
+            // plot points every 15 min
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            let first = true;
+            for (let ha = sunriseHA; ha >= sunsetHA; ha -= Math.PI / 96) { // 15 min steps
+                const sinH = Math.sin(decl) * Math.sin(latRad) + Math.cos(decl) * Math.cos(latRad) * Math.cos(ha);
+                const h = Math.asin(sinH);
+                const cosA = (Math.sin(h) * Math.sin(latRad) - Math.sin(decl)) / (Math.cos(h) * Math.cos(latRad));
+                let a = Math.acos(Math.max(-1, Math.min(1, cosA)));
+                if (Math.sin(ha) < 0) a = -a;
+
+                // adjust for direction: north right (positive X), east down (positive Y)
+                const x = centerX + Math.cos(a) * radius * Math.cos(h);
+                const y = centerY + Math.sin(a) * radius * Math.cos(h);
+
+                if (first) {
+                    ctx.moveTo(x, y);
+                    first = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+        }
+
+        const canvas = document.getElementById('canvas');
+        const lat = document.getElementById('lat');
+        const latSlider = document.getElementById('lat-slider');
+        const dateInput = document.getElementById('date');
+        const dateSlider = document.getElementById('date-slider');
+        const langSelect = document.getElementById('lang');
+
+        function update() {
+            drawSolarPath(canvas, parseFloat(lat.value), new Date(dateInput.value));
+        }
+
+        lat.addEventListener('input', () => {
+            latSlider.value = lat.value;
+            update();
+        });
+        latSlider.addEventListener('input', () => {
+            lat.value = latSlider.value;
+            update();
+        });
+        dateInput.addEventListener('input', () => {
+            const newDate = new Date(dateInput.value);
+            dateSlider.value = getDayOfYear(newDate);
+            update();
+        });
+        dateSlider.addEventListener('input', () => {
+            const year = new Date().getFullYear();
+            const newDate = dateFromDayOfYear(year, parseInt(dateSlider.value));
+            dateInput.value = newDate.toISOString().split('T')[0];
+            update();
+        });
+        langSelect.addEventListener('change', () => {
+            updateUI(langSelect.value);
+            update();
+        });
+
+        // initialize slider
+        const initialDate = new Date(dateInput.value);
+        dateSlider.value = getDayOfYear(initialDate);
+
+        updateUI('zh');
+        update();
+    </script>
+</body>
+</html>
