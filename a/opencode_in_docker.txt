@@ -1,0 +1,28 @@
+安裝 win11 docker desktop
+執行 win11 docker desktop
+pull codercom/code-server:latest image
+啟動 docker image ( in PowerShell )
+
+docker run -d `
+  --name test04 `
+  -p 8080:8443 `
+  -p 4096:4096 `
+  -v "$HOME\docker\code-server\config:/config" `
+  -e PUID=1000 `
+  -e PGID=1000 `
+  -e TZ=Asia/Taipei `
+  -e PASSWORD=你的密碼 `
+  codercom/code-server:latest
+
+你的密碼 ` => 中間記得留空白
+
+回到 docker desktop
+在 container 按右鍵開啟 terminal 連到裡面
+
+安裝 opencode ( 我用 "curl -fsSL https://opencode.ai/install | bash" )
+export PATH=/config/.opencode/bin:$PATH ( 可放到 ~/.bashrc ) 
+執行 opencode web --hostname 0.0.0.0 --port 4096 --cors "http://localhost:4096"
+( 在啟動 opencode web 時，強制它監聽 0.0.0.0 (代表接受所有來源) )
+
+可以回到 win11 browser 連到 http://localhost:4096/
+輸入 API key ( 申請 opencode API key at opencode.ai )
