@@ -1,1 +1,0 @@
-origirnal source: https://github.com/Microck/ordinary-claude-skills/tree/main/skills_all/skill-writer
